@@ -49,5 +49,11 @@ export default defineConfig(
       "react-refresh/only-export-components": "off",
     },
   },
+  {
+    files: ["app/routes/**/*.tsx"],
+    rules: {
+      "@typescript-eslint/only-throw-error": "off",
+    },
+  },
   prettier,
 );
