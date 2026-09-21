@@ -1,0 +1,7 @@
+node_modules
+build
+.react-router
+coverage
+package-lock.json
+.claude
+docs/API_CONTRACT.md
