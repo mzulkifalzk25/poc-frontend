@@ -1,10 +1,13 @@
 import { useState } from "react";
+import { useNavigate } from "react-router";
 
 import { AdminSignInForm } from "~/components/auth/AdminSignInForm";
 import { CashierSignInForm } from "~/components/auth/CashierSignInForm";
 import { RoleCard } from "~/components/auth/RoleCard";
 import { SignInBrandPanel } from "~/components/auth/SignInBrandPanel";
 import { Logo } from "~/components/ui/Logo";
+import { ownerAuthRepository } from "~/infrastructure/api/owner-auth-repository";
+import { signInOwner } from "~/use_cases/sign-in-owner";
 
 type Role = "cashier" | "admin";
 
@@ -42,8 +45,36 @@ const adminIcon = (
   </svg>
 );
 
+const OFFLINE_MESSAGE = "You are offline. Check your connection and try again.";
+
 export default function SignInRoute() {
+  const navigate = useNavigate();
   const [role, setRole] = useState<Role>("cashier");
+  const [adminPending, setAdminPending] = useState(false);
+  const [adminError, setAdminError] = useState<string | null>(null);
+
+  async function handleAdminSubmit(
+    login: string,
+    password: string,
+    remember: boolean,
+  ) {
+    setAdminPending(true);
+    setAdminError(null);
+    const result = await signInOwner(
+      ownerAuthRepository,
+      login,
+      password,
+      remember,
+    );
+    setAdminPending(false);
+    if (result.status === "success") {
+      void navigate("/admin");
+    } else if (result.status === "invalid_credentials") {
+      setAdminError("Wrong email, username or password.");
+    } else {
+      setAdminError(OFFLINE_MESSAGE);
+    }
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#C9D3E0] via-[#E4E9F0] to-[#B8C4D4] p-6">
@@ -118,11 +149,11 @@ export default function SignInRoute() {
               />
             ) : (
               <AdminSignInForm
-                onSubmit={() => {
-                  // wired to the owner sign-in use case in a later commit
+                onSubmit={(login, password, remember) => {
+                  void handleAdminSubmit(login, password, remember);
                 }}
-                pending={false}
-                error={null}
+                pending={adminPending}
+                error={adminError}
               />
             )}
           </div>
