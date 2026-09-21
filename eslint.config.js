@@ -43,5 +43,11 @@ export default defineConfig(
       globals: globals.node,
     },
   },
+  {
+    files: ["app/root.tsx", "app/routes/**/*.tsx"],
+    rules: {
+      "react-refresh/only-export-components": "off",
+    },
+  },
   prettier,
 );

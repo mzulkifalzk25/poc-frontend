@@ -1,1 +1,44 @@
 @import "tailwindcss";
+
+@theme {
+  --font-heading: "Bricolage Grotesque", sans-serif;
+  --font-sans: "DM Sans", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  --color-navy: #0f2742;
+  --color-navy-deep: #071a2d;
+  --color-blue: #174a73;
+  --color-blue-mid: #1d3d60;
+  --color-blue-mid-2: #24507a;
+  --color-gold: #f4b43c;
+  --color-gold-dark: #d99520;
+  --color-off-white: #f7f9fc;
+  --color-border: #e4ebf2;
+  --color-text: #12263f;
+  --color-text-secondary: #61738a;
+  --color-success: #20a86b;
+  --color-success-text: #167a4e;
+  --color-success-bg: #e1f5ec;
+  --color-error: #d94a4a;
+  --color-error-text: #9b1c12;
+  --color-error-bg: #fce8e6;
+  --color-warning: #8a4a08;
+  --color-warning-bg: #fdf0dc;
+
+  --color-category-grocery-bg: #e3f3ea;
+  --color-category-grocery-ink: #0a5c3c;
+  --color-category-dairy-bg: #e4eefb;
+  --color-category-beverages-bg: #fcebdd;
+  --color-category-snacks-bg: #fbe6ee;
+  --color-category-personal-care-bg: #ede6fa;
+  --color-category-household-bg: #e2f1f3;
+  --color-category-bakery-bg: #f6ebc9;
+
+  --color-money-card: #6b9ac4;
+
+  --radius-input: 10px;
+  --radius-card: 14px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-pill: 9999px;
+}
