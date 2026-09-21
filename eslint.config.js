@@ -44,7 +44,7 @@ export default defineConfig(
     },
   },
   {
-    files: ["app/root.tsx", "app/routes/**/*.tsx"],
+    files: ["app/root.tsx", "app/routes/**/*.tsx", "**/*Provider.tsx"],
     rules: {
       "react-refresh/only-export-components": "off",
     },
