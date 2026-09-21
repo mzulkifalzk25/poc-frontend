@@ -8,24 +8,24 @@ Bricolage Grotesque (headings), DM Sans (body), JetBrains Mono (prices, bill num
 
 ## Palette
 
-| Token | Hex | Use |
-|---|---|---|
-| `navy` | `#0F2742` | Headings, logo, icons, dark bars, sidebar |
-| `navy-deep` | `#071A2D` | Sign-in left panel |
-| `blue` | `#174A73` | Primary buttons, links, active states, revenue and profit charts |
-| `blue-mid` | `#1D3D60` | Active nav item background on dark surfaces |
-| `blue-mid-2` | `#24507A` | Secondary accents on dark surfaces |
-| `gold` | `#F4B43C` | Logo accent, selected role, highlights, active sidebar item |
-| `gold-dark` | `#D99520` | Hover and pressed gold |
-| `off-white` | `#F7F9FC` | Page background |
-| `border` | `#E4EBF2` | Borders, dividers, inactive fields |
-| `text` | `#12263F` | Text primary |
-| `text-secondary` | `#61738A` | Text secondary |
-| `success` | `#20A86B` | Online, success, in stock |
-| `success-text` / `success-bg` | `#167A4E` / `#E1F5EC` | Success text on a pale tint |
-| `error` | `#D94A4A` | Errors, destructive buttons |
-| `error-text` / `error-bg` | `#9B1C12` / `#FCE8E6` | Small error text on a pale tint |
-| `warning` / `warning-bg` | `#8A4A08` / `#FDF0DC` | Low stock, cash difference |
+| Token                         | Hex                   | Use                                                              |
+| ----------------------------- | --------------------- | ---------------------------------------------------------------- |
+| `navy`                        | `#0F2742`             | Headings, logo, icons, dark bars, sidebar                        |
+| `navy-deep`                   | `#071A2D`             | Sign-in left panel                                               |
+| `blue`                        | `#174A73`             | Primary buttons, links, active states, revenue and profit charts |
+| `blue-mid`                    | `#1D3D60`             | Active nav item background on dark surfaces                      |
+| `blue-mid-2`                  | `#24507A`             | Secondary accents on dark surfaces                               |
+| `gold`                        | `#F4B43C`             | Logo accent, selected role, highlights, active sidebar item      |
+| `gold-dark`                   | `#D99520`             | Hover and pressed gold                                           |
+| `off-white`                   | `#F7F9FC`             | Page background                                                  |
+| `border`                      | `#E4EBF2`             | Borders, dividers, inactive fields                               |
+| `text`                        | `#12263F`             | Text primary                                                     |
+| `text-secondary`              | `#61738A`             | Text secondary                                                   |
+| `success`                     | `#20A86B`             | Online, success, in stock                                        |
+| `success-text` / `success-bg` | `#167A4E` / `#E1F5EC` | Success text on a pale tint                                      |
+| `error`                       | `#D94A4A`             | Errors, destructive buttons                                      |
+| `error-text` / `error-bg`     | `#9B1C12` / `#FCE8E6` | Small error text on a pale tint                                  |
+| `warning` / `warning-bg`      | `#8A4A08` / `#FDF0DC` | Low stock, cash difference                                       |
 
 ## Category tints
 
