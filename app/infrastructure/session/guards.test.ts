@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   resolveActivateGuardRedirect,
   resolveAdminGuardRedirect,
+  resolveDeactivatedGuardRedirect,
   resolvePosGuardRedirect,
-  resolvePosSignInGuardRedirect,
 } from "./guards";
 import type { AuthSession } from "./session-store";
 
@@ -40,40 +40,48 @@ describe("resolveAdminGuardRedirect", () => {
 
 describe("resolvePosGuardRedirect", () => {
   it("sends an unactivated device to activate", () => {
-    expect(resolvePosGuardRedirect(false, cashierSession)).toBe(
+    expect(resolvePosGuardRedirect("none", cashierSession)).toBe(
       "/pos/activate",
     );
   });
 
+  it("sends a deactivated device to the deactivated screen", () => {
+    expect(resolvePosGuardRedirect("revoked", cashierSession)).toBe(
+      "/pos/deactivated",
+    );
+  });
+
   it("sends an activated device with no cashier session to sign in", () => {
-    expect(resolvePosGuardRedirect(true, null)).toBe("/pos/sign-in");
+    expect(resolvePosGuardRedirect("active", null)).toBe("/");
   });
 
   it("sends an owner session at the counter to sign in", () => {
-    expect(resolvePosGuardRedirect(true, ownerSession)).toBe("/pos/sign-in");
+    expect(resolvePosGuardRedirect("active", ownerSession)).toBe("/");
   });
 
   it("allows an activated device with a cashier session", () => {
-    expect(resolvePosGuardRedirect(true, cashierSession)).toBeNull();
+    expect(resolvePosGuardRedirect("active", cashierSession)).toBeNull();
   });
 });
 
 describe("resolveActivateGuardRedirect", () => {
   it("allows activation when not yet activated", () => {
-    expect(resolveActivateGuardRedirect(false)).toBeNull();
+    expect(resolveActivateGuardRedirect("none")).toBeNull();
   });
 
   it("sends an already-activated device to sign in", () => {
-    expect(resolveActivateGuardRedirect(true)).toBe("/");
+    expect(resolveActivateGuardRedirect("active")).toBe("/");
+  });
+
+  it("sends a deactivated device to the deactivated screen", () => {
+    expect(resolveActivateGuardRedirect("revoked")).toBe("/pos/deactivated");
   });
 });
 
-describe("resolvePosSignInGuardRedirect", () => {
-  it("allows sign in once activated", () => {
-    expect(resolvePosSignInGuardRedirect(true)).toBeNull();
-  });
-
-  it("sends an unactivated device to activate", () => {
-    expect(resolvePosSignInGuardRedirect(false)).toBe("/pos/activate");
+describe("resolveDeactivatedGuardRedirect", () => {
+  it("shows the screen only for a deactivated device", () => {
+    expect(resolveDeactivatedGuardRedirect("revoked")).toBeNull();
+    expect(resolveDeactivatedGuardRedirect("active")).toBe("/");
+    expect(resolveDeactivatedGuardRedirect("none")).toBe("/");
   });
 });

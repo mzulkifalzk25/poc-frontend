@@ -1,5 +1,5 @@
 import { normalizeName } from "~/domain/normalize-name";
-import { isApiError } from "~/infrastructure/api/errors";
+import { DEVICE_REVOKED, isApiError } from "~/infrastructure/api/errors";
 import { setSession } from "~/infrastructure/session/session-store";
 
 export interface RosterEntry {
@@ -23,7 +23,30 @@ export type SignInCashierResult =
   | { status: "name_not_found" }
   | { status: "invalid_pin" }
   | { status: "throttled"; retryAfterSeconds: number }
+  | { status: "device_revoked" }
   | { status: "offline" };
+
+function toFailure(error: unknown): SignInCashierResult {
+  if (error instanceof TypeError) {
+    return { status: "offline" };
+  }
+  if (!isApiError(error)) {
+    throw error;
+  }
+  if (error.code === DEVICE_REVOKED) {
+    return { status: "device_revoked" };
+  }
+  if (error.code === "pin_throttled") {
+    return {
+      status: "throttled",
+      retryAfterSeconds: error.retryAfterSeconds ?? 30,
+    };
+  }
+  if (error.code === "invalid_pin") {
+    return { status: "invalid_pin" };
+  }
+  throw error;
+}
 
 export async function signInCashier(
   repo: CashierAuthRepository,
@@ -34,10 +57,7 @@ export async function signInCashier(
   try {
     roster = await repo.fetchRoster();
   } catch (error) {
-    if (error instanceof TypeError) {
-      return { status: "offline" };
-    }
-    throw error;
+    return toFailure(error);
   }
 
   const normalized = normalizeName(typedName);
@@ -62,18 +82,6 @@ export async function signInCashier(
     );
     return { status: "success" };
   } catch (error) {
-    if (isApiError(error) && error.code === "pin_throttled") {
-      return {
-        status: "throttled",
-        retryAfterSeconds: error.retryAfterSeconds ?? 30,
-      };
-    }
-    if (isApiError(error) && error.code === "invalid_pin") {
-      return { status: "invalid_pin" };
-    }
-    if (error instanceof TypeError) {
-      return { status: "offline" };
-    }
-    throw error;
+    return toFailure(error);
   }
 }

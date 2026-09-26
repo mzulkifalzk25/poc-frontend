@@ -1,6 +1,6 @@
 import { getDeviceToken } from "~/infrastructure/session/device-store";
 
-import { ApiError, type ApiErrorBody } from "./errors";
+import { ApiError, DEVICE_REVOKED, type ApiErrorBody } from "./errors";
 
 export interface TokenProvider {
   getAccessToken: () => string | null;
@@ -11,6 +11,14 @@ let tokenProvider: TokenProvider | null = null;
 
 export function configureApiClient(provider: TokenProvider | null): void {
   tokenProvider = provider;
+}
+
+let deviceRevokedHandler: (() => Promise<void>) | null = null;
+
+export function configureDeviceRevokedHandler(
+  handler: (() => Promise<void>) | null,
+): void {
+  deviceRevokedHandler = handler;
 }
 
 type Method = "GET" | "POST" | "PATCH" | "DELETE";
@@ -59,7 +67,11 @@ async function parseResponse<T>(response: Response): Promise<T> {
   }
   const data: unknown = await response.json();
   if (!response.ok) {
-    throw new ApiError(response.status, data as ApiErrorBody);
+    const error = new ApiError(response.status, data as ApiErrorBody);
+    if (error.code === DEVICE_REVOKED && deviceRevokedHandler) {
+      await deviceRevokedHandler();
+    }
+    throw error;
   }
   return data as T;
 }

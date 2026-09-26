@@ -1,12 +1,15 @@
 import { redirect } from "react-router";
 
 import { PlaceholderPage } from "~/components/ui/PlaceholderPage";
-import { hasActivatedDevice } from "~/infrastructure/session/device-store";
-import { resolvePosSignInGuardRedirect } from "~/infrastructure/session/guards";
+import { getDeviceStatus } from "~/infrastructure/session/device-store";
+import { resolvePosGuardRedirect } from "~/infrastructure/session/guards";
+import { getSession } from "~/infrastructure/session/session-store";
 
 export async function clientLoader() {
-  const activated = await hasActivatedDevice();
-  const redirectTo = resolvePosSignInGuardRedirect(activated);
+  const redirectTo = resolvePosGuardRedirect(
+    await getDeviceStatus(),
+    getSession(),
+  );
   if (redirectTo) {
     throw redirect(redirectTo);
   }

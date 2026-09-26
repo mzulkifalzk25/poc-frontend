@@ -87,4 +87,30 @@ describe("signInCashier", () => {
 
     expect(result).toEqual({ status: "offline" });
   });
+
+  it("returns device_revoked when the counter PC was deactivated", async () => {
+    const repo = makeRepo({
+      fetchRoster: () =>
+        Promise.reject(
+          new ApiError(401, {
+            error: { code: "device_revoked", message: "Deactivated" },
+          }),
+        ),
+    });
+
+    const result = await signInCashier(repo, "Zainab Khan", "1234");
+
+    expect(result).toEqual({ status: "device_revoked" });
+  });
+
+  it("rethrows unexpected server errors", async () => {
+    const repo = makeRepo({
+      pinLogin: () =>
+        Promise.reject(
+          new ApiError(500, { error: { code: "server_error", message: "x" } }),
+        ),
+    });
+
+    await expect(signInCashier(repo, "Zainab Khan", "1234")).rejects.toThrow();
+  });
 });

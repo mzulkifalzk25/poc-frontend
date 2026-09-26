@@ -1,3 +1,4 @@
+import type { DeviceStatus } from "./device-store";
 import type { AuthSession } from "./session-store";
 
 export function resolveAdminGuardRedirect(
@@ -9,27 +10,35 @@ export function resolveAdminGuardRedirect(
   return null;
 }
 
-export function resolvePosGuardRedirect(
-  deviceActivated: boolean,
-  session: AuthSession | null,
-): string | null {
-  if (!deviceActivated) {
+function resolveDeviceRedirect(device: DeviceStatus): string | null {
+  if (device === "none") {
     return "/pos/activate";
   }
-  if (!session || session.role !== "cashier") {
-    return "/pos/sign-in";
+  return device === "revoked" ? "/pos/deactivated" : null;
+}
+
+export function resolvePosGuardRedirect(
+  device: DeviceStatus,
+  session: AuthSession | null,
+): string | null {
+  const deviceRedirect = resolveDeviceRedirect(device);
+  if (deviceRedirect) {
+    return deviceRedirect;
   }
-  return null;
+  return session?.role === "cashier" ? null : "/";
 }
 
 export function resolveActivateGuardRedirect(
-  deviceActivated: boolean,
+  device: DeviceStatus,
 ): string | null {
-  return deviceActivated ? "/" : null;
+  if (device === "revoked") {
+    return "/pos/deactivated";
+  }
+  return device === "active" ? "/" : null;
 }
 
-export function resolvePosSignInGuardRedirect(
-  deviceActivated: boolean,
+export function resolveDeactivatedGuardRedirect(
+  device: DeviceStatus,
 ): string | null {
-  return deviceActivated ? null : "/pos/activate";
+  return device === "revoked" ? null : "/";
 }

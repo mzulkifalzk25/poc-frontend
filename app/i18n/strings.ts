@@ -73,6 +73,9 @@ export const en = {
       notActivated: "Not activated on this PC",
       notActivatedHint: "This PC is not set up as a counter yet.",
       activateLink: "Activate this counter",
+      deactivated: "This PC was deactivated",
+      deactivatedHint: "The owner deactivated this counter PC.",
+      deactivatedLink: "See what to do",
       nameNotFound: "We could not find that name on this counter.",
       wrongPin: "Wrong PIN. Try again.",
       throttledTitle: "Wrong PIN too many times.",
@@ -130,6 +133,17 @@ export const en = {
     },
     ownerPrompt: "Store owner?",
     ownerLink: "Sign in to the Admin portal",
+  },
+  deactivated: {
+    title: "This PC was deactivated",
+    body: "The owner deactivated this counter PC, so it cannot sell or sign cashiers in any more.",
+    counterLine: (counterName: string, code: string) =>
+      `It was ${counterName} (code ${code}).`,
+    unsyncedNote:
+      "Sales that were still waiting on this PC cannot be uploaded any more. Tell the owner.",
+    nextStep:
+      "To use this PC again, ask the owner for a new activation code in Settings > Counters.",
+    reactivate: "Activate with a new code",
   },
 } as const;
 

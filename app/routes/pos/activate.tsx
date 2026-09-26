@@ -8,7 +8,7 @@ import { ActivateSuccess } from "~/components/pos/activate/ActivateSuccess";
 import { t } from "~/i18n/t";
 import { activationRepository } from "~/infrastructure/api/activation-repository";
 import {
-  hasActivatedDevice,
+  getDeviceStatus,
   saveDeviceMeta,
   type DeviceCounter,
 } from "~/infrastructure/session/device-store";
@@ -19,8 +19,7 @@ import {
 } from "~/use_cases/activate-counter";
 
 export async function clientLoader() {
-  const activated = await hasActivatedDevice();
-  const redirectTo = resolveActivateGuardRedirect(activated);
+  const redirectTo = resolveActivateGuardRedirect(await getDeviceStatus());
   if (redirectTo) {
     throw redirect(redirectTo);
   }

@@ -11,7 +11,12 @@ import { useOnlineStatus } from "~/components/ui/useOnlineStatus";
 import { t } from "~/i18n/t";
 import { cashierAuthRepository } from "~/infrastructure/api/cashier-auth-repository";
 import { ownerAuthRepository } from "~/infrastructure/api/owner-auth-repository";
-import { getDeviceCounter } from "~/infrastructure/session/device-store";
+import {
+  getDeviceCounter,
+  getDeviceStatus,
+  type DeviceCounter,
+  type DeviceStatus,
+} from "~/infrastructure/session/device-store";
 import { signInCashier } from "~/use_cases/sign-in-cashier";
 import { signInOwner } from "~/use_cases/sign-in-owner";
 
@@ -79,22 +84,35 @@ function RoleDescription({ lines }: { lines: readonly string[] }) {
   );
 }
 
-function NotActivatedNotice() {
+function DeviceNotice({ status }: { status: DeviceStatus }) {
+  const strings = t().signIn.cashier;
+  const revoked = status === "revoked";
   return (
     <p className="rounded-input bg-warning-bg px-3.5 py-2.5 text-sm text-warning">
-      {t().signIn.cashier.notActivatedHint}{" "}
+      {revoked ? strings.deactivatedHint : strings.notActivatedHint}{" "}
       <Link
-        to="/pos/activate"
+        to={revoked ? "/pos/deactivated" : "/pos/activate"}
         className="rounded font-semibold underline focus-visible:ring-2 focus-visible:ring-blue focus-visible:outline-none"
       >
-        {t().signIn.cashier.activateLink}
+        {revoked ? strings.deactivatedLink : strings.activateLink}
       </Link>
     </p>
   );
 }
 
+function counterLabel(status: DeviceStatus, counter: DeviceCounter | null) {
+  const strings = t().signIn.cashier;
+  if (status === "active" && counter) {
+    return strings.thisPc(counter.name);
+  }
+  return status === "revoked" ? strings.deactivated : strings.notActivated;
+}
+
 export async function clientLoader() {
-  return { counter: await getDeviceCounter() };
+  return {
+    counter: await getDeviceCounter(),
+    status: await getDeviceStatus(),
+  };
 }
 
 export default function SignInRoute() {
@@ -105,7 +123,7 @@ export default function SignInRoute() {
   const [cashierPending, setCashierPending] = useState(false);
   const [cashierError, setCashierError] = useState<string | null>(null);
   const throttle = useCountdown();
-  const { counter } = useLoaderData<typeof clientLoader>();
+  const { counter, status } = useLoaderData<typeof clientLoader>();
 
   async function handleAdminSubmit(
     login: string,
@@ -145,6 +163,8 @@ export default function SignInRoute() {
       setCashierError(strings.cashier.wrongPin);
     } else if (result.status === "throttled") {
       throttle.start(result.retryAfterSeconds);
+    } else if (result.status === "device_revoked") {
+      void navigate("/pos/deactivated", { replace: true });
     } else {
       setCashierError(strings.offline);
     }
@@ -204,13 +224,11 @@ export default function SignInRoute() {
           <div className="mt-[18px] flex flex-grow flex-col justify-center">
             {role === "cashier" ? (
               <CashierSignInForm
-                counterLabel={
-                  counter
-                    ? t().signIn.cashier.thisPc(counter.name)
-                    : t().signIn.cashier.notActivated
+                counterLabel={counterLabel(status, counter)}
+                disabled={status !== "active"}
+                notice={
+                  status === "active" ? null : <DeviceNotice status={status} />
                 }
-                disabled={!counter}
-                notice={counter ? null : <NotActivatedNotice />}
                 onSubmit={(name, pin) => {
                   void handleCashierSubmit(name, pin);
                 }}

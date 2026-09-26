@@ -7,6 +7,7 @@ import {
   getDeviceStatus,
   getDeviceToken,
   hasActivatedDevice,
+  markDeviceRevoked,
   saveDeviceMeta,
   type DeviceMeta,
 } from "./device-store";
@@ -46,6 +47,22 @@ describe("device-store", () => {
     expect(await getDeviceCounter()).toEqual(meta.counter);
     expect(await getDeviceStatus()).toBe("revoked");
     expect(await hasActivatedDevice()).toBe(false);
+  });
+
+  it("marks the device revoked once and keeps the first time", async () => {
+    await saveDeviceMeta(meta);
+
+    await markDeviceRevoked(new Date("2026-09-26T12:00:00Z"));
+    await markDeviceRevoked(new Date("2026-09-26T13:00:00Z"));
+
+    expect((await getDeviceMeta())?.revokedAt).toBe("2026-09-26T12:00:00.000Z");
+    expect(await getDeviceStatus()).toBe("revoked");
+  });
+
+  it("ignores a revoke when no device is stored", async () => {
+    await markDeviceRevoked(new Date("2026-09-26T12:00:00Z"));
+
+    expect(await getDeviceMeta()).toBeNull();
   });
 
   it("clears the device", async () => {

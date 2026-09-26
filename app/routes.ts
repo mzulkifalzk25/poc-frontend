@@ -9,6 +9,7 @@ import {
 export default [
   index("routes/sign-in.tsx"),
   route("pos/activate", "routes/pos/activate.tsx"),
+  route("pos/deactivated", "routes/pos/deactivated.tsx"),
   route("pos/sign-in", "routes/pos/sign-in.tsx"),
   layout("routes/pos/layout.tsx", [
     ...prefix("pos", [

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   isRouteErrorResponse,
   Links,
@@ -5,7 +6,13 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useNavigate,
 } from "react-router";
+
+import {
+  installDeviceRevokedHandler,
+  uninstallDeviceRevokedHandler,
+} from "~/infrastructure/session/device-revoked";
 
 import type { Route } from "./+types/root";
 import "./styles/app.css";
@@ -44,6 +51,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    installDeviceRevokedHandler(() => {
+      void navigate("/pos/deactivated", { replace: true });
+    });
+    return uninstallDeviceRevokedHandler;
+  }, [navigate]);
+
   return <Outlet />;
 }
 

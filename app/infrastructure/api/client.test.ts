@@ -5,7 +5,11 @@ import {
   saveDeviceMeta,
 } from "~/infrastructure/session/device-store";
 
-import { apiClient, configureApiClient } from "./client";
+import {
+  apiClient,
+  configureApiClient,
+  configureDeviceRevokedHandler,
+} from "./client";
 import { isApiError } from "./errors";
 
 function jsonResponse(status: number, body: unknown): Response {
@@ -22,6 +26,7 @@ describe("apiClient", () => {
 
   afterEach(async () => {
     configureApiClient(null);
+    configureDeviceRevokedHandler(null);
     await clearDeviceMeta();
     vi.unstubAllGlobals();
     vi.unstubAllEnvs();
@@ -138,5 +143,39 @@ describe("apiClient", () => {
     expect(
       (init.headers as Record<string, string>).Authorization,
     ).toBeUndefined();
+  });
+
+  it("runs the device revoked handler before throwing", async () => {
+    const handler = vi.fn(() => Promise.resolve());
+    configureDeviceRevokedHandler(handler);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        jsonResponse(401, {
+          error: { code: "device_revoked", message: "Deactivated" },
+        }),
+      ),
+    );
+
+    await expect(
+      apiClient.get("/pos/roster", { tokenSource: "device" }),
+    ).rejects.toMatchObject({ code: "device_revoked" });
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not run the device revoked handler for other errors", async () => {
+    const handler = vi.fn(() => Promise.resolve());
+    configureDeviceRevokedHandler(handler);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        jsonResponse(401, {
+          error: { code: "invalid_pin", message: "Wrong" },
+        }),
+      ),
+    );
+
+    await expect(apiClient.post("/auth/pin-login", {})).rejects.toThrow();
+    expect(handler).not.toHaveBeenCalled();
   });
 });

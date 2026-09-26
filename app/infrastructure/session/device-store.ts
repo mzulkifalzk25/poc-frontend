@@ -30,6 +30,13 @@ export async function clearDeviceMeta(): Promise<void> {
   await db.meta.delete(DEVICE_KEY);
 }
 
+export async function markDeviceRevoked(at: Date): Promise<void> {
+  const meta = await getDeviceMeta();
+  if (meta && !meta.revokedAt) {
+    await saveDeviceMeta({ ...meta, revokedAt: at.toISOString() });
+  }
+}
+
 export async function getDeviceToken(): Promise<string | null> {
   const meta = await getDeviceMeta();
   return meta && !meta.revokedAt ? meta.token : null;

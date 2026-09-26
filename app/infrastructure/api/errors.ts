@@ -1,3 +1,5 @@
+export const DEVICE_REVOKED = "device_revoked";
+
 export interface ApiErrorBody {
   error: {
     code: string;

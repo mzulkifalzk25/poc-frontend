@@ -3,14 +3,16 @@ import { Outlet, redirect, useLoaderData, useMatches } from "react-router";
 import { CashierTopBar } from "~/components/pos/CashierTopBar";
 import {
   getDeviceCounter,
-  hasActivatedDevice,
+  getDeviceStatus,
 } from "~/infrastructure/session/device-store";
 import { resolvePosGuardRedirect } from "~/infrastructure/session/guards";
 import { getSession } from "~/infrastructure/session/session-store";
 
 export async function clientLoader() {
-  const activated = await hasActivatedDevice();
-  const redirectTo = resolvePosGuardRedirect(activated, getSession());
+  const redirectTo = resolvePosGuardRedirect(
+    await getDeviceStatus(),
+    getSession(),
+  );
   if (redirectTo) {
     throw redirect(redirectTo);
   }

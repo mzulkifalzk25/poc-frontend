@@ -22,6 +22,7 @@ const Stub = createRoutesStub([
   { path: "/", Component: SignInRoute, loader: clientLoader },
   { path: "/admin", Component: () => <div>Admin dashboard</div> },
   { path: "/pos/sign-in", Component: () => <div>Start your shift</div> },
+  { path: "/pos/deactivated", Component: () => <div>Deactivated screen</div> },
 ]);
 
 const roster = [{ id: 7, full_name: "Zainab Khan", initials: "ZK" }];
@@ -236,5 +237,38 @@ describe("SignInRoute", () => {
     ).toBeInTheDocument();
     expect(screen.getByLabelText("PIN")).toBeDisabled();
     expect(screen.getByRole("button", { name: /^sign in$/i })).toBeDisabled();
+  });
+
+  it("blocks cashier sign in on a deactivated PC and links to the explanation", async () => {
+    await saveDeviceMeta({
+      token: "device-token",
+      counter: { id: 2, name: "Counter 2", code: "002" },
+      activatedAt: "2026-09-26T10:00:00Z",
+      revokedAt: "2026-09-26T12:00:00Z",
+    });
+    await renderSignIn();
+
+    expect(screen.getByText("This PC was deactivated")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "See what to do" }),
+    ).toHaveAttribute("href", "/pos/deactivated");
+    expect(screen.getByRole("button", { name: /^sign in$/i })).toBeDisabled();
+  });
+
+  it("opens the deactivated screen when the server revokes the PC", async () => {
+    await activateDevice();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        jsonResponse(401, {
+          error: { code: "device_revoked", message: "Deactivated" },
+        }),
+      ),
+    );
+    await renderSignIn();
+
+    await submitCashier("Zainab Khan", "1234");
+
+    expect(await screen.findByText("Deactivated screen")).toBeInTheDocument();
   });
 });
