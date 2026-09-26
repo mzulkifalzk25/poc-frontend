@@ -223,6 +223,52 @@ export const en = {
       done: (name: string) => `Products moved and ${name} deleted`,
     },
   },
+  products: {
+    title: "Products",
+    subtitle: (products: number, categories: number) =>
+      `${count(products)} products across ${count(categories)} categories`,
+    importCsv: "Import CSV",
+    export: "Export",
+    comingLater: "Not in this version yet",
+    scanToAdd: "Scan to add",
+    addProduct: "Add product",
+    search: "Search name or barcode",
+    categories: "Categories",
+    allCategories: "All",
+    more: "More",
+    stockFilter: "Stock",
+    filters: {
+      all: "Stock: All",
+      low: "Stock: Low",
+      out: "Stock: Out",
+      archived: "Archived",
+    },
+    columns: {
+      product: "Product",
+      barcode: "Barcode",
+      category: "Category",
+      price: "Price",
+      cost: "Cost",
+      stock: "Stock",
+      actions: "Actions",
+    },
+    status: {
+      in_stock: "In stock",
+      low: "Low",
+      out: "Out",
+      archived: "Archived",
+    },
+    noCategory: "No category",
+    edit: (name: string) => `Edit ${name}`,
+    remove: (name: string) => `Delete ${name}`,
+    tableLabel: "Products",
+    empty: {
+      title: "No products found",
+      hint: "Try another search or filter, or scan a barcode to add a product.",
+      catalogueTitle: "No products yet",
+      catalogueHint: "Scan a barcode to add your first product.",
+    },
+  },
 } as const;
 
 export type Strings = typeof en;
