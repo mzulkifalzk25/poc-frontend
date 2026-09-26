@@ -6,10 +6,13 @@ import {
   type DraftLine,
   type ScannedProduct,
 } from "~/domain/bill";
+import type { PaymentMethod } from "~/domain/payment";
 
 export interface CurrentBillState {
   lines: DraftLine[];
   lastProductId: number | null;
+  method: PaymentMethod;
+  received: string;
 }
 
 export type CurrentBillAction =
@@ -18,9 +21,16 @@ export type CurrentBillAction =
   | { type: "change"; productId: number; delta: number }
   | { type: "remove"; productId: number }
   | { type: "replace"; lines: DraftLine[] }
+  | { type: "method"; method: PaymentMethod }
+  | { type: "received"; text: string }
   | { type: "clear" };
 
-export const EMPTY_BILL: CurrentBillState = { lines: [], lastProductId: null };
+export const EMPTY_BILL: CurrentBillState = {
+  lines: [],
+  lastProductId: null,
+  method: "cash",
+  received: "",
+};
 
 export function currentBillReducer(
   state: CurrentBillState,
@@ -48,6 +58,10 @@ export function currentBillReducer(
       return { ...state, lines: removeLine(state.lines, action.productId) };
     case "replace":
       return { ...EMPTY_BILL, lines: action.lines };
+    case "method":
+      return { ...state, method: action.method };
+    case "received":
+      return { ...state, received: action.text };
     case "clear":
       return EMPTY_BILL;
   }

@@ -47,11 +47,20 @@ describe("currentBillReducer", () => {
       type: "replace",
       lines: [{ ...milk, qty: 3 }],
     });
-    expect(recalled).toEqual({
-      lines: [{ ...milk, qty: 3 }],
-      lastProductId: null,
-    });
+    expect(recalled).toEqual({ ...EMPTY_BILL, lines: [{ ...milk, qty: 3 }] });
 
     expect(currentBillReducer(recalled, { type: "clear" })).toEqual(EMPTY_BILL);
+  });
+
+  it("keeps one payment method and the cash received until the bill is cleared", () => {
+    let state = currentBillReducer(EMPTY_BILL, {
+      type: "method",
+      method: "card",
+    });
+    state = currentBillReducer(state, { type: "method", method: "cash" });
+    state = currentBillReducer(state, { type: "received", text: "5,000" });
+    expect(state).toMatchObject({ method: "cash", received: "5,000" });
+
+    expect(currentBillReducer(state, { type: "clear" })).toEqual(EMPTY_BILL);
   });
 });

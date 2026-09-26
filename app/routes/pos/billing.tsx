@@ -1,15 +1,19 @@
 import { useCallback, useRef, useState } from "react";
 import { useLoaderData } from "react-router";
 
+import { BillActions } from "~/components/pos/bill/BillActions";
 import { BillTable } from "~/components/pos/bill/BillTable";
 import { useCurrentBill } from "~/components/pos/bill/CurrentBillProvider";
 import { CurrentBillPanel } from "~/components/pos/bill/CurrentBillPanel";
+import { PaymentSection } from "~/components/pos/bill/PaymentSection";
+import { receivedPaisa } from "~/components/pos/bill/received";
 import { QuickItems } from "~/components/pos/bill/QuickItems";
 import { ScanBox } from "~/components/pos/bill/ScanBox";
 import { useScanner } from "~/components/pos/bill/useScanner";
 import { useAsyncData } from "~/components/ui/useAsyncData";
 import { billTotals, type ScannedProduct } from "~/domain/bill";
 import { nextBillNumber } from "~/domain/bill-number";
+import { canPay } from "~/domain/payment";
 import { catalogueStore } from "~/infrastructure/db/catalogue-store";
 import { META_KEYS } from "~/infrastructure/db/meta-keys";
 import { metaStore } from "~/infrastructure/db/meta-store";
@@ -58,6 +62,12 @@ export default function BillingRoute() {
   const [tabId, setTabId] = useState(data.tabs[0]?.id ?? null);
   const quickProducts = useQuickProducts(tabId);
   const totals = billTotals(state.lines, data.taxRule);
+  const payable = canPay(
+    totals.itemCount,
+    state.method,
+    totals.total,
+    receivedPaisa(state.received),
+  );
 
   return (
     <div className="flex h-[calc(100vh-4rem)] min-h-0">
@@ -96,7 +106,28 @@ export default function BillingRoute() {
         billNo={data.billNo}
         itemCount={totals.itemCount}
         total={totals.total}
-      />
+      >
+        <PaymentSection
+          method={state.method}
+          received={state.received}
+          total={totals.total}
+          onMethod={(method) => {
+            dispatch({ type: "method", method });
+          }}
+          onReceived={(text) => {
+            dispatch({ type: "received", text });
+          }}
+        />
+        <BillActions
+          canPay={payable}
+          canHold={state.lines.length > 0}
+          canClear={state.lines.length > 0}
+          onPay={() => undefined}
+          onClear={() => {
+            dispatch({ type: "clear" });
+          }}
+        />
+      </CurrentBillPanel>
     </div>
   );
 }

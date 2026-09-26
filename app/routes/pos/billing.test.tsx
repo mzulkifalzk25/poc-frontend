@@ -242,3 +242,78 @@ describe("Billing desk: current bill and quick items", () => {
     ).toBeInTheDocument();
   });
 });
+
+describe("Billing desk: payment", () => {
+  async function billOf650() {
+    const desk = await openDesk();
+    await desk.user.type(desk.scanBox, "8961005600055{Enter}");
+    await desk.user.type(desk.scanBox, "8961005600055{Enter}");
+    await desk.user.type(desk.scanBox, "8961004500044{Enter}");
+    await screen.findByLabelText("Quantity of Fresh Milk 1L");
+    return desk;
+  }
+
+  it("keeps Pay off until the cash received covers the total", async () => {
+    const { user } = await billOf650();
+    const pay = screen.getByRole("button", { name: /pay & print/i });
+    expect(screen.getByRole("radio", { name: "Cash" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    expect(pay).toBeDisabled();
+
+    await user.type(screen.getByLabelText("Received"), "500");
+    expect(pay).toBeDisabled();
+    expect(screen.getByText("Still to collect")).toBeInTheDocument();
+    expect(screen.getByText("Rs 150")).toBeInTheDocument();
+
+    await user.clear(screen.getByLabelText("Received"));
+    await user.type(screen.getByLabelText("Received"), "1,000");
+    expect(pay).toBeEnabled();
+    expect(screen.getByText("Change due")).toBeInTheDocument();
+    expect(screen.getByText("Rs 350")).toBeInTheDocument();
+  });
+
+  it("fills the received cash from the chips", async () => {
+    const { user } = await billOf650();
+
+    await user.click(screen.getByRole("button", { name: "Exact" }));
+    expect(screen.getByLabelText("Received")).toHaveValue("650");
+    expect(screen.getByText("Rs 0")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "5,000" }));
+    expect(screen.getByRole("button", { name: "5,000" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByText("Rs 4,350")).toBeInTheDocument();
+  });
+
+  it("uses one method; card and wallet wait for the terminal and can pay", async () => {
+    const { user } = await billOf650();
+
+    await user.click(screen.getByRole("radio", { name: "Card" }));
+
+    expect(screen.getByRole("radio", { name: "Cash" })).toHaveAttribute(
+      "aria-checked",
+      "false",
+    );
+    expect(
+      screen.getByText(
+        "Waiting for the customer to complete payment on the terminal.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByLabelText("Received")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /pay & print/i })).toBeEnabled();
+  });
+
+  it("clears the bill", async () => {
+    const { user } = await billOf650();
+
+    await user.click(screen.getByRole("button", { name: "Clear bill" }));
+
+    expect(screen.getByText("Ready for the next customer")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Clear bill" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /pay & print/i })).toBeDisabled();
+  });
+});
