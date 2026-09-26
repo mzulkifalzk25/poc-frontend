@@ -8,3 +8,18 @@ export function cleanBarcode(raw: string): string {
 export function isPlausibleBarcode(code: string): boolean {
   return BARCODE_PATTERN.test(code);
 }
+
+export interface LastScan {
+  code: string;
+  at: number;
+}
+
+// A camera sees the same code many times a second; count it once per window.
+export function isRepeatScan(
+  last: LastScan | null,
+  code: string,
+  at: number,
+  windowMs: number,
+): boolean {
+  return last !== null && last.code === code && at - last.at < windowMs;
+}

@@ -1,8 +1,10 @@
-import { useId } from "react";
-import { useNavigate } from "react-router";
+import { useId, useState } from "react";
+import { useLocation, useNavigate } from "react-router";
 
 import { useProductsOutlet } from "~/components/admin/products/productsOutlet";
+import { CameraScanner } from "~/components/admin/scan/CameraScanner";
 import { NewProductForm } from "~/components/admin/scan/NewProductForm";
+import { ScanTabs, type ScanTab } from "~/components/admin/scan/ScanTabs";
 import { ScanStatus } from "~/components/admin/scan/ScanStatus";
 import { UsbScanner } from "~/components/admin/scan/UsbScanner";
 import { useScanToAdd } from "~/components/admin/scan/useScanToAdd";
@@ -14,10 +16,20 @@ import { t } from "~/i18n/t";
 import { categoryRepository } from "~/infrastructure/api/category-repository";
 import { productRepository } from "~/infrastructure/api/product-repository";
 
+function initialTab(state: unknown): ScanTab {
+  const wanted =
+    typeof state === "object" && state !== null && "tab" in state
+      ? state.tab
+      : null;
+  return wanted === "usb" ? "usb" : "camera";
+}
+
 export default function ScanAddRoute() {
   const strings = t().scanAdd;
   const formId = useId();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [tab, setTab] = useState(() => initialTab(location.state));
   const { showToast } = useToast();
   const { reloadList, closeDrawer } = useProductsOutlet();
   const categories = useAsyncData(categoryRepository.list);
@@ -56,10 +68,18 @@ export default function ScanAddRoute() {
         </>
       }
     >
-      <UsbScanner
-        disabled={scanner.phase === "looking"}
-        onScan={(code) => void scanner.scan(code)}
-      />
+      <ScanTabs value={tab} onChange={setTab} />
+      {tab === "camera" ? (
+        <CameraScanner
+          detected={isNew ? scanner.draft.barcode : null}
+          onScan={(code) => void scanner.scan(code)}
+        />
+      ) : (
+        <UsbScanner
+          disabled={scanner.phase === "looking"}
+          onScan={(code) => void scanner.scan(code)}
+        />
+      )}
       <ScanStatus
         phase={scanner.phase}
         error={scanner.scanError}

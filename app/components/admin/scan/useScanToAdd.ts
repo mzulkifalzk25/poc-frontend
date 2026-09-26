@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { cleanBarcode } from "~/domain/barcode";
 import type { ProductDetail, ProductSummary } from "~/domain/product";
 import type { NewProductDraft } from "~/domain/product-draft";
 import { t } from "~/i18n/t";
@@ -57,6 +58,9 @@ export function useScanToAdd({ repo, onKnown, onCreated }: ScanOptions) {
   const [errors, setErrors] = useState<FieldMessages>({});
 
   async function scan(raw: string) {
+    if (phase === "new" && cleanBarcode(raw) === draft.barcode) {
+      return;
+    }
     setPhase("looking");
     setScanError(null);
     const found = await lookupBarcode(repo, raw);

@@ -315,6 +315,20 @@ export const en = {
       placeholder: "Scan or type a barcode, then press Enter",
       hint: "The USB scanner types the code and presses Enter for you.",
     },
+    tabs: {
+      label: "How to scan",
+      camera: "Phone camera",
+      usb: "USB scanner",
+    },
+    camera: {
+      label: "Camera view",
+      rear: "Rear camera",
+      starting: "Starting the camera…",
+      unsupported:
+        "This browser cannot read barcodes with the camera. Use the USB scanner tab.",
+      blocked:
+        "The camera is blocked or missing. Allow camera access, or use the USB scanner tab.",
+    },
     start: "Scan a barcode to start.",
     lookingUp: "Looking up the barcode…",
     detected: "Barcode detected",

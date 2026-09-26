@@ -65,9 +65,17 @@ function install(extra: Record<string, FakeRoute> = {}) {
   });
 }
 
-async function openScanner() {
+async function openScanner(tab: "camera" | "usb" = "usb") {
   const user = userEvent.setup();
-  render(<Stub initialEntries={["/admin/products/scan"]} />);
+  render(
+    <Stub
+      initialEntries={[
+        tab === "usb"
+          ? { pathname: "/admin/products/scan", state: { tab: "usb" } }
+          : "/admin/products/scan",
+      ]}
+    />,
+  );
   const drawer = await screen.findByRole("dialog", { name: "Scan to add" });
   return { user, drawer };
 }
@@ -101,6 +109,8 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  Reflect.deleteProperty(navigator, "mediaDevices");
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
   vi.unstubAllEnvs();
 });
@@ -238,6 +248,52 @@ describe("ScanAddRoute", () => {
 
     expect(await within(drawer).findByRole("alert")).toHaveTextContent(
       "You are offline. Looking up a barcode needs a connection.",
+    );
+  });
+
+  it("opens on the camera tab and explains when the camera cannot scan", async () => {
+    install();
+
+    const { user, drawer } = await openScanner("camera");
+
+    expect(
+      within(drawer).getByRole("tab", { name: "Phone camera" }),
+    ).toHaveAttribute("aria-selected", "true");
+    expect(
+      within(drawer).getByRole("region", { name: "Camera view" }),
+    ).toHaveTextContent("This browser cannot read barcodes with the camera.");
+    await user.click(within(drawer).getByRole("tab", { name: "USB scanner" }));
+    expect(within(drawer).getByLabelText("Barcode")).toHaveFocus();
+  });
+
+  it("looks up a code the camera detects", async () => {
+    let detections = [[{ rawValue: "8961011200111" }]];
+    vi.stubGlobal(
+      "BarcodeDetector",
+      class {
+        detect() {
+          const next = detections;
+          detections = [[]];
+          return Promise.resolve(next[0] ?? []);
+        }
+      },
+    );
+    const stream = { getTracks: () => [] };
+    Object.defineProperty(navigator, "mediaDevices", {
+      configurable: true,
+      value: { getUserMedia: () => Promise.resolve(stream) },
+    });
+    vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
+    install();
+
+    const { drawer } = await openScanner("camera");
+
+    expect(
+      await within(drawer).findByText("New barcode.", {}, { timeout: 2000 }),
+    ).toBeInTheDocument();
+    expect(within(drawer).getByText("Barcode detected")).toBeInTheDocument();
+    expect(within(drawer).getByLabelText("Barcode")).toHaveValue(
+      "8961011200111",
     );
   });
 });
