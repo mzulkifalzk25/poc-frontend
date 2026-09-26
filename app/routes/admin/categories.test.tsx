@@ -218,4 +218,141 @@ describe("CategoriesRoute", () => {
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
+
+  it("deletes an empty category after a confirmation", async () => {
+    const user = userEvent.setup();
+    const frozen = { id: 5, name: "Frozen", tint: "snacks", product_count: 0 };
+    let list = [grocery, frozen];
+    const fetchMock = installFakeFetch({
+      "GET /categories": () => jsonResponse(200, list),
+      "DELETE /categories/5": () => {
+        list = [grocery];
+        return jsonResponse(204);
+      },
+    });
+
+    renderPage();
+    await user.click(
+      await screen.findByRole("button", { name: "Edit Frozen" }),
+    );
+    await user.click(screen.getByRole("button", { name: "Delete" }));
+    expect(
+      screen.getByRole("dialog", { name: "Delete Frozen?" }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Delete category" }));
+
+    expect(await screen.findByText("Frozen deleted")).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.test/api/v1/categories/5",
+      expect.objectContaining({ method: "DELETE" }),
+    );
+  });
+
+  it("blocks deleting a category with products and moves them", async () => {
+    const user = userEvent.setup();
+    const calls: string[] = [];
+    let list = [grocery, dairy];
+    installFakeFetch({
+      "GET /categories": () => jsonResponse(200, list),
+      "POST /categories/1/move-products": (body) => {
+        calls.push(`move ${JSON.stringify(body)}`);
+        return jsonResponse(204);
+      },
+      "DELETE /categories/1": () => {
+        calls.push("delete");
+        list = [{ ...dairy, product_count: 6360 }];
+        return jsonResponse(204);
+      },
+    });
+
+    renderPage();
+    await user.click(
+      await screen.findByRole("button", { name: "Edit Grocery" }),
+    );
+    await user.click(screen.getByRole("button", { name: "Delete" }));
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Grocery still has 5,120 products, so it can't be deleted.",
+    );
+    await user.click(screen.getByRole("button", { name: "Move products" }));
+    const dialog = screen.getByRole("dialog", { name: "Move products" });
+    expect(within(dialog).getByLabelText("Move to")).toHaveValue("2");
+    await user.click(
+      within(dialog).getByRole("button", { name: "Move and delete" }),
+    );
+
+    expect(
+      await screen.findByText("Products moved and Grocery deleted"),
+    ).toBeInTheDocument();
+    expect(calls).toEqual(['move {"to_category_id":2}', "delete"]);
+  });
+
+  it("shows the blocked message when the server says it is not empty", async () => {
+    const user = userEvent.setup();
+    const stale = { id: 5, name: "Frozen", tint: "snacks", product_count: 0 };
+    installFakeFetch({
+      "GET /categories": () => jsonResponse(200, [grocery, stale]),
+      "DELETE /categories/5": () =>
+        jsonResponse(409, {
+          error: { code: "category_has_products", message: "Not empty" },
+        }),
+    });
+
+    renderPage();
+    await user.click(
+      await screen.findByRole("button", { name: "Edit Frozen" }),
+    );
+    await user.click(screen.getByRole("button", { name: "Delete" }));
+    await user.click(screen.getByRole("button", { name: "Delete category" }));
+
+    expect(
+      await screen.findByRole("button", { name: "Move products" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("dialog", { name: "Delete Frozen?" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("explains when there is no other category to move to", async () => {
+    const user = userEvent.setup();
+    installFakeFetch({ "GET /categories": () => jsonResponse(200, [grocery]) });
+
+    renderPage();
+    await user.click(
+      await screen.findByRole("button", { name: "Edit Grocery" }),
+    );
+    await user.click(screen.getByRole("button", { name: "Delete" }));
+    await user.click(screen.getByRole("button", { name: "Move products" }));
+
+    expect(
+      screen.getByText(
+        "Add another category first, then move the products there.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Move and delete" }),
+    ).toBeDisabled();
+  });
+
+  it("closes only the dialog on Escape", async () => {
+    const user = userEvent.setup();
+    installFakeFetch({
+      "GET /categories": () => jsonResponse(200, [grocery, dairy]),
+    });
+
+    renderPage();
+    await user.click(
+      await screen.findByRole("button", { name: "Edit Grocery" }),
+    );
+    await user.click(screen.getByRole("button", { name: "Delete" }));
+    await user.click(screen.getByRole("button", { name: "Move products" }));
+    await user.keyboard("{Escape}");
+
+    expect(
+      screen.queryByRole("dialog", { name: "Move products" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("dialog", { name: "Edit category" }),
+    ).toBeInTheDocument();
+  });
 });

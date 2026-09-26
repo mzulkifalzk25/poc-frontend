@@ -19,6 +19,7 @@ export const en = {
     close: "Close",
     cancel: "Cancel",
     saving: "Saving…",
+    working: "Please wait…",
   },
   brand: {
     tagline: "POS & Store Management",
@@ -200,6 +201,26 @@ export const en = {
         bakery: "Yellow",
       },
       save: "Save category",
+    },
+    remove: {
+      button: "Delete",
+      confirmTitle: (name: string) => `Delete ${name}?`,
+      confirmBody:
+        "This category has no products. It will be removed for good.",
+      confirm: "Delete category",
+      blocked: (name: string, products: number) =>
+        `${name} still has ${count(products)} products, so it can't be deleted. Move them to another category first.`,
+      moveButton: "Move products",
+      deleted: (name: string) => `${name} deleted`,
+    },
+    move: {
+      title: "Move products",
+      body: (name: string, products: number) =>
+        `Move all ${count(products)} products from ${name} to another category. Then ${name} is deleted.`,
+      target: "Move to",
+      noTarget: "Add another category first, then move the products there.",
+      submit: "Move and delete",
+      done: (name: string) => `Products moved and ${name} deleted`,
     },
   },
 } as const;

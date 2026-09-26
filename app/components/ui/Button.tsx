@@ -1,7 +1,12 @@
 import type { ButtonHTMLAttributes } from "react";
 
 type ButtonVariant =
-  "primary" | "outline" | "secondary" | "destructive" | "gold";
+  | "primary"
+  | "outline"
+  | "secondary"
+  | "destructive"
+  | "destructiveOutline"
+  | "gold";
 type ButtonSize = "sm" | "md" | "lg" | "xl";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -19,6 +24,8 @@ const variantClasses: Record<ButtonVariant, string> = {
   secondary:
     "border border-border-strong text-text bg-white hover:bg-off-white active:bg-border",
   destructive: "bg-error text-white hover:brightness-95 active:brightness-90",
+  destructiveOutline:
+    "border-[1.5px] border-error text-error bg-white hover:bg-error-bg active:brightness-95",
   gold: "bg-gold text-navy hover:bg-gold-dark active:bg-gold-dark",
 };
 
@@ -32,11 +39,13 @@ const sizeClasses: Record<ButtonSize, string> = {
 export function Button({
   variant = "primary",
   size = "md",
+  type = "button",
   className,
   ...props
 }: ButtonProps) {
   return (
     <button
+      type={type}
       className={`${base} ${variantClasses[variant]} ${sizeClasses[size]} ${className ?? ""}`}
       {...props}
     />

@@ -1,6 +1,8 @@
-import { useEffect, useId, type ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 
 import { t } from "~/i18n/t";
+
+import { closeOnEscape } from "./closeOnEscape";
 
 interface DrawerProps {
   title: string;
@@ -36,20 +38,8 @@ export function Drawer({
 }: DrawerProps) {
   const titleId = useId();
 
-  useEffect(() => {
-    function handleKey(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        onClose();
-      }
-    }
-    window.addEventListener("keydown", handleKey);
-    return () => {
-      window.removeEventListener("keydown", handleKey);
-    };
-  }, [onClose]);
-
   return (
-    <div className="fixed inset-0 z-40">
+    <div className="fixed inset-0 z-40" onKeyDown={closeOnEscape(onClose)}>
       <div className="absolute inset-0 bg-navy/50" onClick={onClose} />
       <section
         role="dialog"

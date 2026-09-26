@@ -1,6 +1,7 @@
 import { PageHeader } from "~/components/admin/PageHeader";
 import { CategoryCard } from "~/components/admin/categories/CategoryCard";
-import { CategoryForm } from "~/components/admin/categories/CategoryForm";
+import { CategoryEditorLayer } from "~/components/admin/categories/CategoryEditorLayer";
+import { useCategoryDeletion } from "~/components/admin/categories/useCategoryDeletion";
 import { useCategoryEditor } from "~/components/admin/categories/useCategoryEditor";
 import { Button } from "~/components/ui/Button";
 import { Card } from "~/components/ui/Card";
@@ -11,11 +12,7 @@ import {
 } from "~/components/ui/StateBlocks";
 import { useToast } from "~/components/ui/ToastProvider";
 import { useAsyncData } from "~/components/ui/useAsyncData";
-import {
-  nextUnusedTint,
-  totalProductCount,
-  type Category,
-} from "~/domain/category";
+import { totalProductCount, type Category } from "~/domain/category";
 import { t } from "~/i18n/t";
 import { categoryRepository } from "~/infrastructure/api/category-repository";
 
@@ -100,7 +97,24 @@ export default function CategoriesRoute() {
       reload();
     },
   });
+  const deletion = useCategoryDeletion({
+    repo: categoryRepository,
+    onDeleted: (category, moved) => {
+      editor.close();
+      showToast(
+        moved
+          ? strings.move.done(category.name)
+          : strings.remove.deleted(category.name),
+      );
+      reload();
+    },
+  });
   const categories = state.status === "ready" ? state.data : [];
+
+  function startEditing(category: Category | null) {
+    deletion.reset();
+    editor.start(category);
+  }
 
   return (
     <div className="flex max-w-[1136px] flex-col gap-6">
@@ -114,7 +128,7 @@ export default function CategoriesRoute() {
         actions={
           <Button
             onClick={() => {
-              editor.start(null);
+              startEditing(null);
             }}
           >
             <PlusIcon size={18} />
@@ -140,24 +154,18 @@ export default function CategoriesRoute() {
       {state.status === "ready" && (
         <CategoryGrid
           categories={categories}
-          onEdit={editor.start}
+          onEdit={startEditing}
           onAdd={() => {
-            editor.start(null);
+            startEditing(null);
           }}
         />
       )}
       <InfoNote />
-      {editor.open && (
-        <CategoryForm
-          category={editor.category}
-          defaultTint={nextUnusedTint(categories)}
-          pending={editor.pending}
-          error={editor.error}
-          fieldErrors={editor.fieldErrors}
-          onSubmit={(draft) => void editor.submit(draft)}
-          onClose={editor.close}
-        />
-      )}
+      <CategoryEditorLayer
+        categories={categories}
+        editor={editor}
+        deletion={deletion}
+      />
     </div>
   );
 }
