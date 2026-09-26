@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useLoaderData, useNavigate } from "react-router";
 
 import { AdminSignInForm } from "~/components/auth/AdminSignInForm";
 import { CashierSignInForm } from "~/components/auth/CashierSignInForm";
@@ -109,6 +109,10 @@ function NotActivatedNotice() {
   );
 }
 
+export async function clientLoader() {
+  return { counter: await getDeviceCounter() };
+}
+
 export default function SignInRoute() {
   const navigate = useNavigate();
   const [role, setRole] = useState<Role>("cashier");
@@ -117,7 +121,7 @@ export default function SignInRoute() {
   const [cashierPending, setCashierPending] = useState(false);
   const [cashierError, setCashierError] = useState<string | null>(null);
   const throttle = useCountdown();
-  const counter = getDeviceCounter();
+  const { counter } = useLoaderData<typeof clientLoader>();
 
   async function handleAdminSubmit(
     login: string,

@@ -22,7 +22,7 @@ interface RequestOptions {
   tokenSource?: TokenSource;
 }
 
-function resolveToken(tokenSource: TokenSource): string | null {
+async function resolveToken(tokenSource: TokenSource): Promise<string | null> {
   if (tokenSource === "none") {
     return null;
   }
@@ -42,7 +42,7 @@ async function sendRequest(
   if (body !== undefined) {
     headers["Content-Type"] = "application/json";
   }
-  const token = resolveToken(tokenSource);
+  const token = await resolveToken(tokenSource);
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }

@@ -1,6 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { setDeviceToken } from "~/infrastructure/session/device-store";
+import {
+  clearDeviceMeta,
+  saveDeviceMeta,
+} from "~/infrastructure/session/device-store";
 
 import { apiClient, configureApiClient } from "./client";
 import { isApiError } from "./errors";
@@ -17,9 +20,9 @@ describe("apiClient", () => {
     vi.stubEnv("VITE_API_BASE_URL", "https://api.test");
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     configureApiClient(null);
-    localStorage.clear();
+    await clearDeviceMeta();
     vi.unstubAllGlobals();
     vi.unstubAllEnvs();
   });
@@ -99,7 +102,12 @@ describe("apiClient", () => {
   });
 
   it("sends the device token for device-scoped requests", async () => {
-    setDeviceToken("device-token-1");
+    await saveDeviceMeta({
+      token: "device-token-1",
+      counter: { id: 2, name: "Counter 2", code: "002" },
+      activatedAt: "2026-09-26T10:00:00Z",
+      revokedAt: null,
+    });
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(200, [])));
 
     await apiClient.get("/pos/roster", { tokenSource: "device" });

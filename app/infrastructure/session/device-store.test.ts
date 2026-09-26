@@ -1,46 +1,57 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import {
+  clearDeviceMeta,
   getDeviceCounter,
+  getDeviceMeta,
+  getDeviceStatus,
   getDeviceToken,
   hasActivatedDevice,
-  setDeviceCounter,
-  setDeviceToken,
+  saveDeviceMeta,
+  type DeviceMeta,
 } from "./device-store";
 
-beforeEach(() => {
-  localStorage.clear();
+const meta: DeviceMeta = {
+  token: "device-token-1",
+  counter: { id: 3, name: "Counter 3", code: "003" },
+  activatedAt: "2026-09-26T10:00:00Z",
+  revokedAt: null,
+};
+
+beforeEach(async () => {
+  await clearDeviceMeta();
 });
 
 describe("device-store", () => {
-  it("has no device token by default", async () => {
-    expect(getDeviceToken()).toBeNull();
-    await expect(hasActivatedDevice()).resolves.toBe(false);
+  it("has no device by default", async () => {
+    expect(await getDeviceMeta()).toBeNull();
+    expect(await getDeviceToken()).toBeNull();
+    expect(await getDeviceStatus()).toBe("none");
+    expect(await hasActivatedDevice()).toBe(false);
   });
 
-  it("stores and reports an activated device", async () => {
-    setDeviceToken("device-token-1");
+  it("stores and reads back the activated device", async () => {
+    await saveDeviceMeta(meta);
 
-    expect(getDeviceToken()).toBe("device-token-1");
-    await expect(hasActivatedDevice()).resolves.toBe(true);
+    expect(await getDeviceToken()).toBe("device-token-1");
+    expect(await getDeviceCounter()).toEqual(meta.counter);
+    expect(await getDeviceStatus()).toBe("active");
+    expect(await hasActivatedDevice()).toBe(true);
   });
 
-  it("clears the device token", async () => {
-    setDeviceToken("device-token-1");
-    setDeviceToken(null);
+  it("stops handing out the token once the device is revoked", async () => {
+    await saveDeviceMeta({ ...meta, revokedAt: "2026-09-26T11:00:00Z" });
 
-    await expect(hasActivatedDevice()).resolves.toBe(false);
+    expect(await getDeviceToken()).toBeNull();
+    expect(await getDeviceCounter()).toEqual(meta.counter);
+    expect(await getDeviceStatus()).toBe("revoked");
+    expect(await hasActivatedDevice()).toBe(false);
   });
 
-  it("has no device counter by default", () => {
-    expect(getDeviceCounter()).toBeNull();
-  });
+  it("clears the device", async () => {
+    await saveDeviceMeta(meta);
+    await clearDeviceMeta();
 
-  it("stores and clears the device counter", () => {
-    setDeviceCounter({ name: "Counter 3", code: "003" });
-    expect(getDeviceCounter()).toEqual({ name: "Counter 3", code: "003" });
-
-    setDeviceCounter(null);
-    expect(getDeviceCounter()).toBeNull();
+    expect(await getDeviceMeta()).toBeNull();
   });
 });

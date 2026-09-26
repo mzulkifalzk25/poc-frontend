@@ -4,12 +4,12 @@ import { createRoutesStub } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
-  setDeviceCounter,
-  setDeviceToken,
+  clearDeviceMeta,
+  saveDeviceMeta,
 } from "~/infrastructure/session/device-store";
 import { getSession } from "~/infrastructure/session/session-store";
 
-import SignInRoute from "./sign-in";
+import SignInRoute, { clientLoader } from "./sign-in";
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -19,16 +19,25 @@ function jsonResponse(status: number, body: unknown): Response {
 }
 
 const Stub = createRoutesStub([
-  { path: "/", Component: SignInRoute },
+  { path: "/", Component: SignInRoute, loader: clientLoader },
   { path: "/admin", Component: () => <div>Admin dashboard</div> },
   { path: "/pos/sign-in", Component: () => <div>Start your shift</div> },
 ]);
 
 const roster = [{ id: 7, full_name: "Zainab Khan", initials: "ZK" }];
 
-function activateDevice() {
-  setDeviceToken("device-token");
-  setDeviceCounter({ name: "Counter 2", code: "002" });
+async function activateDevice() {
+  await saveDeviceMeta({
+    token: "device-token",
+    counter: { id: 2, name: "Counter 2", code: "002" },
+    activatedAt: "2026-09-26T10:00:00Z",
+    revokedAt: null,
+  });
+}
+
+async function renderSignIn() {
+  render(<Stub initialEntries={["/"]} />);
+  await screen.findByText("Welcome back!");
 }
 
 function mockCashierApi(pinLoginResponse: Response) {
@@ -51,8 +60,9 @@ async function submitCashier(name: string, pin: string) {
   await user.click(screen.getByRole("button", { name: /^sign in$/i }));
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.stubEnv("VITE_API_BASE_URL", "https://api.test");
+  await clearDeviceMeta();
   localStorage.clear();
   sessionStorage.clear();
 });
@@ -63,8 +73,8 @@ afterEach(() => {
 });
 
 describe("SignInRoute", () => {
-  it("shows the cashier form by default", () => {
-    render(<Stub initialEntries={["/"]} />);
+  it("shows the cashier form by default", async () => {
+    await renderSignIn();
 
     expect(screen.getByText("Counter")).toBeInTheDocument();
     expect(screen.getByLabelText("Cashier name")).toBeInTheDocument();
@@ -73,7 +83,7 @@ describe("SignInRoute", () => {
 
   it("switches to the admin form when the admin role card is selected", async () => {
     const user = userEvent.setup();
-    render(<Stub initialEntries={["/"]} />);
+    await renderSignIn();
 
     await user.click(screen.getByRole("button", { name: /admin/i }));
 
@@ -84,7 +94,7 @@ describe("SignInRoute", () => {
 
   it("marks the selected role card as pressed", async () => {
     const user = userEvent.setup();
-    render(<Stub initialEntries={["/"]} />);
+    await renderSignIn();
 
     const cashierCard = screen.getByRole("button", { name: /cashier/i });
     const adminCard = screen.getByRole("button", { name: /admin/i });
@@ -109,7 +119,7 @@ describe("SignInRoute", () => {
       ),
     );
     const user = userEvent.setup();
-    render(<Stub initialEntries={["/"]} />);
+    await renderSignIn();
 
     await user.click(screen.getByRole("button", { name: /admin/i }));
     await user.type(
@@ -133,7 +143,7 @@ describe("SignInRoute", () => {
       ),
     );
     const user = userEvent.setup();
-    render(<Stub initialEntries={["/"]} />);
+    await renderSignIn();
 
     await user.click(screen.getByRole("button", { name: /admin/i }));
     await user.type(
@@ -149,15 +159,15 @@ describe("SignInRoute", () => {
     expect(getSession()).toBeNull();
   });
 
-  it("shows the counter of this PC in cashier mode", () => {
-    activateDevice();
-    render(<Stub initialEntries={["/"]} />);
+  it("shows the counter of this PC in cashier mode", async () => {
+    await activateDevice();
+    await renderSignIn();
 
     expect(screen.getByText("Counter 2 (this PC)")).toBeInTheDocument();
   });
 
-  it("asks to activate the PC and blocks cashier sign in when not activated", () => {
-    render(<Stub initialEntries={["/"]} />);
+  it("asks to activate the PC and blocks cashier sign in when not activated", async () => {
+    await renderSignIn();
 
     expect(
       screen.getByRole("link", { name: "Activate this counter" }),
@@ -166,7 +176,7 @@ describe("SignInRoute", () => {
   });
 
   it("signs the cashier in and opens start your shift", async () => {
-    activateDevice();
+    await activateDevice();
     mockCashierApi(
       jsonResponse(200, {
         access: "a",
@@ -174,7 +184,7 @@ describe("SignInRoute", () => {
         user: { id: 7, full_name: "Zainab Khan" },
       }),
     );
-    render(<Stub initialEntries={["/"]} />);
+    await renderSignIn();
 
     await submitCashier(" zainab  KHAN ", "1234");
 
@@ -183,9 +193,9 @@ describe("SignInRoute", () => {
   });
 
   it("says the name was not found without calling pin login", async () => {
-    activateDevice();
+    await activateDevice();
     mockCashierApi(jsonResponse(500, {}));
-    render(<Stub initialEntries={["/"]} />);
+    await renderSignIn();
 
     await submitCashier("Nobody Here", "1234");
 
@@ -196,11 +206,11 @@ describe("SignInRoute", () => {
   });
 
   it("shows a wrong pin message", async () => {
-    activateDevice();
+    await activateDevice();
     mockCashierApi(
       jsonResponse(401, { error: { code: "invalid_pin", message: "Wrong" } }),
     );
-    render(<Stub initialEntries={["/"]} />);
+    await renderSignIn();
 
     await submitCashier("Zainab Khan", "0000");
 
@@ -210,14 +220,14 @@ describe("SignInRoute", () => {
   });
 
   it("shows the wait countdown when the pin is throttled", async () => {
-    activateDevice();
+    await activateDevice();
     mockCashierApi(
       jsonResponse(429, {
         error: { code: "pin_throttled", message: "Wait" },
         retry_after: 30,
       }),
     );
-    render(<Stub initialEntries={["/"]} />);
+    await renderSignIn();
 
     await submitCashier("Zainab Khan", "0000");
 

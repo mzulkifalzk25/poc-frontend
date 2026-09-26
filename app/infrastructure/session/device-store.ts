@@ -1,45 +1,53 @@
-const DEVICE_TOKEN_KEY = "martdesk.device_token";
-const DEVICE_COUNTER_KEY = "martdesk.device_counter";
+import { db } from "~/infrastructure/db/database";
+
+const DEVICE_KEY = "device";
 
 export interface DeviceCounter {
+  id: number;
   name: string;
   code: string;
 }
 
-// Interim localStorage flags; replaced by the Dexie device-meta store
-// once the activate-counter branch lands.
-export function getDeviceToken(): string | null {
-  return localStorage.getItem(DEVICE_TOKEN_KEY);
+export interface DeviceMeta {
+  token: string;
+  counter: DeviceCounter;
+  activatedAt: string;
+  revokedAt: string | null;
 }
 
-export function setDeviceToken(token: string | null): void {
-  if (token) {
-    localStorage.setItem(DEVICE_TOKEN_KEY, token);
-  } else {
-    localStorage.removeItem(DEVICE_TOKEN_KEY);
-  }
+export type DeviceStatus = "none" | "active" | "revoked";
+
+export async function getDeviceMeta(): Promise<DeviceMeta | null> {
+  const row = await db.meta.get(DEVICE_KEY);
+  return row ? (row.value as DeviceMeta) : null;
 }
 
-export function hasActivatedDevice(): Promise<boolean> {
-  return Promise.resolve(getDeviceToken() !== null);
+export async function saveDeviceMeta(meta: DeviceMeta): Promise<void> {
+  await db.meta.put({ key: DEVICE_KEY, value: meta });
 }
 
-export function getDeviceCounter(): DeviceCounter | null {
-  const raw = localStorage.getItem(DEVICE_COUNTER_KEY);
-  if (!raw) {
-    return null;
-  }
-  try {
-    return JSON.parse(raw) as DeviceCounter;
-  } catch {
-    return null;
-  }
+export async function clearDeviceMeta(): Promise<void> {
+  await db.meta.delete(DEVICE_KEY);
 }
 
-export function setDeviceCounter(counter: DeviceCounter | null): void {
-  if (counter) {
-    localStorage.setItem(DEVICE_COUNTER_KEY, JSON.stringify(counter));
-  } else {
-    localStorage.removeItem(DEVICE_COUNTER_KEY);
+export async function getDeviceToken(): Promise<string | null> {
+  const meta = await getDeviceMeta();
+  return meta && !meta.revokedAt ? meta.token : null;
+}
+
+export async function getDeviceCounter(): Promise<DeviceCounter | null> {
+  const meta = await getDeviceMeta();
+  return meta?.counter ?? null;
+}
+
+export async function getDeviceStatus(): Promise<DeviceStatus> {
+  const meta = await getDeviceMeta();
+  if (!meta) {
+    return "none";
   }
+  return meta.revokedAt ? "revoked" : "active";
+}
+
+export async function hasActivatedDevice(): Promise<boolean> {
+  return (await getDeviceStatus()) === "active";
 }

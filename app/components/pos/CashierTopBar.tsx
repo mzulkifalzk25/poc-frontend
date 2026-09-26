@@ -1,22 +1,25 @@
 import type { ReactNode } from "react";
 
 import { Logo } from "~/components/ui/Logo";
-import { getDeviceCounter } from "~/infrastructure/session/device-store";
 import { useSession } from "~/infrastructure/session/use-session";
 
 interface CashierTopBarProps {
   title: string;
+  counterName: string | null;
   actions?: ReactNode;
 }
 
-export function CashierTopBar({ title, actions }: CashierTopBarProps) {
+export function CashierTopBar({
+  title,
+  counterName,
+  actions,
+}: CashierTopBarProps) {
   const session = useSession();
-  const counter = getDeviceCounter();
   const online = typeof navigator === "undefined" ? true : navigator.onLine;
 
   const context = [
     "Fresh Basket Mart",
-    counter?.name,
+    counterName,
     session?.role === "cashier" ? session.fullName : null,
   ]
     .filter(Boolean)
