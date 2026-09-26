@@ -176,6 +176,32 @@ export const en = {
         `${name}'s shift is still open on this counter. They must end it before a new shift starts.`,
     },
   },
+  billing: {
+    title: "Billing desk",
+    scanLabel: "Scan barcode or search product",
+    scanPlaceholder: "Scan a barcode or type a product name",
+    scanned: (name: string, price: string) => `${name} · ${price}`,
+    unknownBarcode: (barcode: string) =>
+      `Barcode ${barcode} is not in the catalogue.`,
+    outOfStock: (name: string) => `${name} is out of stock.`,
+    table: {
+      label: "Current bill items",
+      number: "#",
+      item: "Item",
+      qty: "Qty",
+      price: "Price",
+      total: "Total",
+      actions: "Actions",
+      decrease: (name: string) => `Decrease ${name}`,
+      increase: (name: string) => `Increase ${name}`,
+      quantity: (name: string) => `Quantity of ${name}`,
+      remove: (name: string) => `Remove ${name}`,
+    },
+    empty: {
+      title: "Ready for the next customer",
+      hint: "Scan the first item to start a bill.",
+    },
+  },
   deactivated: {
     title: "This PC was deactivated",
     body: "The owner deactivated this counter PC, so it cannot sell or sign cashiers in any more.",

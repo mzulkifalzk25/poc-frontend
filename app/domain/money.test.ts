@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { formatMoney, parseMoney, roundToWholeRupees } from "./money";
+import {
+  formatAmount,
+  formatMoney,
+  formatPaisa,
+  parseMoney,
+  roundToWholeRupees,
+} from "./money";
 
 describe("parseMoney", () => {
   it("parses an api money string", () => {
@@ -35,5 +41,17 @@ describe("formatMoney", () => {
 
   it("formats a negative amount", () => {
     expect(formatMoney(-570)).toBe("Rs -570");
+  });
+});
+
+describe("formatAmount and formatPaisa", () => {
+  it("drops the currency for table columns", () => {
+    expect(formatAmount("1650.00")).toBe("1,650");
+    expect(formatAmount(-20)).toBe("-20");
+  });
+
+  it("formats paisa as whole rupees", () => {
+    expect(formatPaisa(135000)).toBe("Rs 1,350");
+    expect(formatPaisa(17550)).toBe("Rs 176");
   });
 });

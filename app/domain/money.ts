@@ -21,3 +21,12 @@ export function formatMoney(value: string | number): string {
   const amount = typeof value === "string" ? parseMoney(value) : value;
   return `Rs ${withThousandsSeparators(roundToWholeRupees(amount))}`;
 }
+
+// "1,650" without the currency, for table columns under a money heading.
+export function formatAmount(value: string | number): string {
+  return formatMoney(value).slice("Rs ".length);
+}
+
+export function formatPaisa(paisa: number): string {
+  return formatMoney(paisa / 100);
+}

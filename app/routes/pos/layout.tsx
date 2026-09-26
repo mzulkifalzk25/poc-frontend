@@ -1,5 +1,6 @@
 import { Outlet, redirect, useLoaderData, useMatches } from "react-router";
 
+import { CurrentBillProvider } from "~/components/pos/bill/CurrentBillProvider";
 import { CashierTopBar } from "~/components/pos/CashierTopBar";
 import { useCounterSync } from "~/components/pos/useCounterSync";
 import { useHeartbeat } from "~/components/pos/useHeartbeat";
@@ -56,7 +57,9 @@ export default function PosLayout() {
         counterName={counter?.name ?? null}
       />
       <main className="flex-1">
-        <Outlet />
+        <CurrentBillProvider>
+          <Outlet />
+        </CurrentBillProvider>
       </main>
     </div>
   );
