@@ -145,6 +145,14 @@ export const en = {
       "To use this PC again, ask the owner for a new activation code in Settings > Counters.",
     reactivate: "Activate with a new code",
   },
+  states: {
+    loading: "Loading…",
+    error: {
+      title: "Something went wrong",
+      hint: "We could not load this. Check your connection and try again.",
+      retry: "Try again",
+    },
+  },
   admin: {
     paging: {
       label: "Pages",
