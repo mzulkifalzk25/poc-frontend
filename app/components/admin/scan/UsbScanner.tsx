@@ -1,25 +1,33 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { t } from "~/i18n/t";
 
 import { monoFieldClass } from "../FormField";
 
 interface UsbScannerProps {
-  disabled: boolean;
+  busy: boolean;
+  focusSignal: number;
   onScan: (code: string) => void;
 }
 
 // A keyboard-wedge scanner types the code and presses Enter.
-export function UsbScanner({ disabled, onScan }: UsbScannerProps) {
+export function UsbScanner({ busy, focusSignal, onScan }: UsbScannerProps) {
   const strings = t().scanAdd.usb;
   const [code, setCode] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, [focusSignal]);
 
   return (
     <form
       className="flex flex-col gap-1.5"
       onSubmit={(event) => {
         event.preventDefault();
+        if (busy) {
+          return;
+        }
         onScan(code);
         setCode("");
         inputRef.current?.focus();
@@ -36,7 +44,8 @@ export function UsbScanner({ disabled, onScan }: UsbScannerProps) {
         placeholder={strings.placeholder}
         autoComplete="off"
         autoFocus
-        disabled={disabled}
+        readOnly={busy}
+        aria-busy={busy}
         onChange={(event) => {
           setCode(event.target.value);
         }}

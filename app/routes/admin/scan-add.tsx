@@ -16,6 +16,24 @@ import { t } from "~/i18n/t";
 import { categoryRepository } from "~/infrastructure/api/category-repository";
 import { productRepository } from "~/infrastructure/api/product-repository";
 
+function ScanIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.9}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M4 8V5a1 1 0 011-1h3M16 4h3a1 1 0 011 1v3M20 16v3a1 1 0 01-1 1h-3M8 20H5a1 1 0 01-1-1v-3M4 12h16" />
+    </svg>
+  );
+}
+
 function initialTab(state: unknown): ScanTab {
   const wanted =
     typeof state === "object" && state !== null && "tab" in state
@@ -39,10 +57,12 @@ export default function ScanAddRoute() {
       showToast(strings.known(product.name), "info");
       void navigate(`/admin/products/${String(product.id)}`);
     },
-    onCreated: (product) => {
+    onCreated: (product, scanNext) => {
       showToast(strings.saved(product.name));
       reloadList();
-      closeDrawer();
+      if (!scanNext) {
+        closeDrawer();
+      }
     },
   });
   const isNew = scanner.phase === "new";
@@ -50,11 +70,21 @@ export default function ScanAddRoute() {
   return (
     <Drawer
       title={strings.title}
+      subtitle={strings.added(scanner.addedCount)}
       onClose={closeDrawer}
       footer={
         <>
           <Button variant="secondary" size="lg" onClick={closeDrawer}>
             {t().common.cancel}
+          </Button>
+          <Button
+            variant="outline"
+            size="lg"
+            className="border-[1.5px]"
+            disabled={!isNew || scanner.pending}
+            onClick={() => void scanner.save(false)}
+          >
+            {strings.save}
           </Button>
           <Button
             type="submit"
@@ -63,7 +93,8 @@ export default function ScanAddRoute() {
             className="flex-grow"
             disabled={!isNew || scanner.pending}
           >
-            {scanner.pending ? t().common.saving : strings.save}
+            {scanner.pending ? t().common.saving : strings.saveNext}
+            <ScanIcon />
           </Button>
         </>
       }
@@ -76,14 +107,15 @@ export default function ScanAddRoute() {
         />
       ) : (
         <UsbScanner
-          disabled={scanner.phase === "looking"}
+          busy={scanner.phase === "looking"}
+          focusSignal={scanner.addedCount}
           onScan={(code) => void scanner.scan(code)}
         />
       )}
       <ScanStatus
         phase={scanner.phase}
         error={scanner.scanError}
-        categoryKept={false}
+        categoryKept={scanner.categoryKept}
       />
       {isNew && (
         <NewProductForm
@@ -96,7 +128,7 @@ export default function ScanAddRoute() {
           errors={scanner.errors}
           error={scanner.error}
           onChange={scanner.update}
-          onSubmit={() => void scanner.save()}
+          onSubmit={() => void scanner.save(true)}
         />
       )}
     </Drawer>

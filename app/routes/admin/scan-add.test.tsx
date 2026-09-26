@@ -61,6 +61,7 @@ function install(extra: Record<string, FakeRoute> = {}) {
     "GET /categories": () => jsonResponse(200, categories),
     "GET /products": () => jsonResponse(200, { count: 1, results: [oil] }),
     "GET /products/by-barcode/8961011200111": unknown,
+    "GET /products/by-barcode/8961011200128": unknown,
     ...extra,
   });
 }
@@ -295,5 +296,50 @@ describe("ScanAddRoute", () => {
     expect(within(drawer).getByLabelText("Barcode")).toHaveValue(
       "8961011200111",
     );
+  });
+
+  it("saves and scans the next product with the same category", async () => {
+    let created = 0;
+    install({
+      "POST /products": (body) => {
+        created += 1;
+        const { name } = body as { name: string };
+        return jsonResponse(201, {
+          ...oil,
+          id: 20 + created,
+          name,
+          category_id: 4,
+          low_stock_alert: "10.000",
+          is_archived: false,
+        });
+      },
+    });
+    const { user, drawer } = await scanNewBarcode();
+    expect(
+      within(drawer).getByText("0 products added this session"),
+    ).toBeInTheDocument();
+    expect(drawer).not.toHaveTextContent("pre-selected");
+
+    await fillNewProduct(user, drawer);
+    await user.click(
+      within(drawer).getByRole("button", { name: "Save & scan next" }),
+    );
+
+    expect(
+      await within(drawer).findByText("1 product added this session"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Wafer Chocolate 40g added")).toBeInTheDocument();
+    expect(within(drawer).getByLabelText("Barcode")).toHaveFocus();
+    expect(
+      within(drawer).queryByLabelText("Product name"),
+    ).not.toBeInTheDocument();
+
+    await user.keyboard("8961011200128{Enter}");
+    await within(drawer).findByText("New barcode.");
+    expect(drawer).toHaveTextContent(
+      "Category is pre-selected from your last scan.",
+    );
+    expect(within(drawer).getByLabelText("Category")).toHaveValue("4");
+    expect(within(drawer).getByLabelText("Product name")).toHaveValue("");
   });
 });

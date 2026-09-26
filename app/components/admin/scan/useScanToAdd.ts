@@ -46,7 +46,7 @@ function lookupErrorMessage(found: BarcodeLookup): string | null {
 interface ScanOptions {
   repo: ProductRepository;
   onKnown: (product: ProductSummary) => void;
-  onCreated: (product: ProductDetail) => void;
+  onCreated: (product: ProductDetail, scanNext: boolean) => void;
 }
 
 export function useScanToAdd({ repo, onKnown, onCreated }: ScanOptions) {
@@ -56,6 +56,8 @@ export function useScanToAdd({ repo, onKnown, onCreated }: ScanOptions) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errors, setErrors] = useState<FieldMessages>({});
+  const [addedCount, setAddedCount] = useState(0);
+  const [lastCategoryId, setLastCategoryId] = useState<number | null>(null);
 
   async function scan(raw: string) {
     if (phase === "new" && cleanBarcode(raw) === draft.barcode) {
@@ -68,7 +70,7 @@ export function useScanToAdd({ repo, onKnown, onCreated }: ScanOptions) {
       setPhase("scanning");
       onKnown(found.product);
     } else if (found.status === "unknown") {
-      setDraft(blankDraft(found.barcode));
+      setDraft({ ...blankDraft(found.barcode), categoryId: lastCategoryId });
       setErrors({});
       setError(null);
       setPhase("new");
@@ -78,15 +80,25 @@ export function useScanToAdd({ repo, onKnown, onCreated }: ScanOptions) {
     }
   }
 
-  async function save(): Promise<boolean> {
+  function finishSaved(product: ProductDetail, scanNext: boolean) {
+    setErrors({});
+    setAddedCount((total) => total + 1);
+    setLastCategoryId(draft.categoryId);
+    if (scanNext) {
+      setDraft({ ...blankDraft(""), categoryId: draft.categoryId });
+      setPhase("scanning");
+    }
+    onCreated(product, scanNext);
+  }
+
+  async function save(scanNext: boolean): Promise<void> {
     setPending(true);
     setError(null);
     const outcome = await createProduct(repo, draft);
     setPending(false);
     if (outcome.status === "done") {
-      setErrors({});
-      onCreated(outcome.value);
-      return true;
+      finishSaved(outcome.value, scanNext);
+      return;
     }
     if (outcome.status === "rejected") {
       setErrors(fieldMessages(outcome.fields));
@@ -98,12 +110,13 @@ export function useScanToAdd({ repo, onKnown, onCreated }: ScanOptions) {
         outcome.status === "invalid" ? fieldMessages({}, outcome.fields) : {},
       );
     }
-    return false;
   }
 
   return {
     phase,
     draft,
+    addedCount,
+    categoryKept: lastCategoryId !== null,
     scanError,
     pending,
     error,

@@ -343,6 +343,7 @@ export const en = {
     stock: "Stock",
     lowStock: "Low-stock alert",
     save: "Save",
+    saveNext: "Save & scan next",
     saved: (name: string) => `${name} added`,
   },
   productArchive: {
