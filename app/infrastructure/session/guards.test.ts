@@ -5,6 +5,7 @@ import {
   resolveAdminGuardRedirect,
   resolveDeactivatedGuardRedirect,
   resolvePosGuardRedirect,
+  resolveShiftRedirect,
 } from "./guards";
 import type { AuthSession } from "./session-store";
 
@@ -83,5 +84,25 @@ describe("resolveDeactivatedGuardRedirect", () => {
     expect(resolveDeactivatedGuardRedirect("revoked")).toBeNull();
     expect(resolveDeactivatedGuardRedirect("active")).toBe("/");
     expect(resolveDeactivatedGuardRedirect("none")).toBe("/");
+  });
+});
+
+describe("resolveShiftRedirect", () => {
+  const cashier = {
+    role: "cashier" as const,
+    accessToken: "",
+    refreshToken: "",
+    userId: 12,
+    fullName: "Zainab Khan",
+  };
+
+  it("lets the cashier with the open shift into billing", () => {
+    expect(resolveShiftRedirect(12, cashier)).toBeNull();
+  });
+
+  it("sends everyone else to start a shift", () => {
+    expect(resolveShiftRedirect(null, cashier)).toBe("/pos/sign-in");
+    expect(resolveShiftRedirect(13, cashier)).toBe("/pos/sign-in");
+    expect(resolveShiftRedirect(12, null)).toBe("/pos/sign-in");
   });
 });

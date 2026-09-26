@@ -16,7 +16,7 @@ export function createShiftStore(database: MartDeskDatabase) {
     update: async (id: string, changes: Partial<ShiftRow>) => {
       await database.shifts.update(id, changes);
     },
-    waitingUpload: () =>
+    waitingUpload: async (): Promise<ShiftRow[]> =>
       database.shifts
         .where("syncState")
         .anyOf("open_pending", "close_pending")

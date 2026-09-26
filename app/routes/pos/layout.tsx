@@ -8,7 +8,11 @@ import {
   getDeviceCounter,
   getDeviceStatus,
 } from "~/infrastructure/session/device-store";
-import { resolvePosGuardRedirect } from "~/infrastructure/session/guards";
+import { shiftStore } from "~/infrastructure/db/shift-store";
+import {
+  resolvePosGuardRedirect,
+  resolveShiftRedirect,
+} from "~/infrastructure/session/guards";
 import { getSession } from "~/infrastructure/session/session-store";
 import { counterSyncDeps } from "~/infrastructure/sync/counter-sync-deps";
 import { heartbeatDeps } from "~/infrastructure/sync/heartbeat-deps";
@@ -21,8 +25,17 @@ export async function clientLoader() {
   if (redirectTo) {
     throw redirect(redirectTo);
   }
+  const counter = await getDeviceCounter();
+  const shift = counter ? await shiftStore.current(counter.id) : null;
+  const shiftRedirect = resolveShiftRedirect(
+    shift?.cashierId ?? null,
+    getSession(),
+  );
+  if (shiftRedirect) {
+    throw redirect(shiftRedirect);
+  }
   await counterClock.load();
-  return { counter: await getDeviceCounter() };
+  return { counter, shift };
 }
 
 interface RouteHandle {

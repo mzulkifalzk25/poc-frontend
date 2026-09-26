@@ -42,3 +42,13 @@ export function resolveDeactivatedGuardRedirect(
 ): string | null {
   return device === "revoked" ? null : "/";
 }
+
+// The billing screens need this cashier's open shift on this counter.
+export function resolveShiftRedirect(
+  openShiftCashierId: number | null,
+  session: AuthSession | null,
+): string | null {
+  return session && openShiftCashierId === session.userId
+    ? null
+    : "/pos/sign-in";
+}

@@ -143,6 +143,39 @@ export const en = {
     ownerPrompt: "Store owner?",
     ownerLink: "Sign in to the Admin portal",
   },
+  startShift: {
+    title: "Start your shift",
+    who: (name: string, counter: string) => `${name} · ${counter}`,
+    notYou: "Not you? Sign out",
+    cashLabel: "Cash in the drawer right now",
+    cashHint:
+      "Count the notes and coins before you start. This is checked against your sales when you end the shift.",
+    catalogue: "Catalogue",
+    catalogueReady: (total: number) => `${count(total)} products ready`,
+    catalogueDownloading: (loaded: number) =>
+      loaded > 0 ? `Downloading… ${count(loaded)} products` : "Downloading…",
+    catalogueFailed: "Download stopped",
+    retry: "Try again",
+    lastSynced: "Last synced",
+    justNow: "Just now",
+    minutesAgo: (minutes: number) =>
+      minutes < 60
+        ? `${count(minutes)} min ago`
+        : `${count(Math.floor(minutes / 60))} h ago`,
+    notYet: "Not yet",
+    scanner: "Scanner",
+    scannerValue: "USB, types like a keyboard",
+    start: "Start shift",
+    starting: "Starting…",
+    errors: {
+      invalid_amount: "Enter the cash in the drawer, 0 or more.",
+      not_synced:
+        "The catalogue must finish downloading before the first shift.",
+      no_counter: "This PC is not activated as a counter.",
+      other_open: (name: string) =>
+        `${name}'s shift is still open on this counter. They must end it before a new shift starts.`,
+    },
+  },
   deactivated: {
     title: "This PC was deactivated",
     body: "The owner deactivated this counter PC, so it cannot sell or sign cashiers in any more.",
