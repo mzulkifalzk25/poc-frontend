@@ -6,6 +6,8 @@ export interface AuthSession {
   refreshToken: string;
   userId: number;
   fullName: string;
+  // A cashier signed in with the PIN verifier on this PC; no user tokens yet.
+  offline?: boolean;
 }
 
 const STORAGE_KEY = "martdesk.session";

@@ -9,7 +9,6 @@ import { useCountdown } from "~/components/auth/useCountdown";
 import { Logo } from "~/components/ui/Logo";
 import { useOnlineStatus } from "~/components/ui/useOnlineStatus";
 import { t } from "~/i18n/t";
-import { cashierAuthRepository } from "~/infrastructure/api/cashier-auth-repository";
 import { ownerAuthRepository } from "~/infrastructure/api/owner-auth-repository";
 import {
   getDeviceCounter,
@@ -17,6 +16,7 @@ import {
   type DeviceCounter,
   type DeviceStatus,
 } from "~/infrastructure/session/device-store";
+import { cashierSignInDeps } from "~/infrastructure/sync/cashier-sign-in-deps";
 import { signInCashier } from "~/use_cases/sign-in-cashier";
 import { signInOwner } from "~/use_cases/sign-in-owner";
 
@@ -152,7 +152,7 @@ export default function SignInRoute() {
     setCashierPending(true);
     setCashierError(null);
     throttle.clear();
-    const result = await signInCashier(cashierAuthRepository, name, pin);
+    const result = await signInCashier(cashierSignInDeps, name, pin);
     setCashierPending(false);
     const strings = t().signIn;
     if (result.status === "success") {

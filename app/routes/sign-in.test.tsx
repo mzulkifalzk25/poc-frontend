@@ -1,8 +1,12 @@
+import { pbkdf2Sync } from "node:crypto";
+
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createRoutesStub } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { db } from "~/infrastructure/db/database";
+import { peopleStore } from "~/infrastructure/db/people-store";
 import {
   clearDeviceMeta,
   saveDeviceMeta,
@@ -63,6 +67,7 @@ async function submitCashier(name: string, pin: string) {
 
 beforeEach(async () => {
   vi.stubEnv("VITE_API_BASE_URL", "https://api.test");
+  await Promise.all(db.tables.map((table) => table.clear()));
   await clearDeviceMeta();
   localStorage.clear();
   sessionStorage.clear();
@@ -270,5 +275,32 @@ describe("SignInRoute", () => {
     await submitCashier("Zainab Khan", "1234");
 
     expect(await screen.findByText("Deactivated screen")).toBeInTheDocument();
+  });
+
+  it("signs a cashier in on this PC when the network is down", async () => {
+    await activateDevice();
+    const hash = pbkdf2Sync("4821", "salt", 1000, 32, "sha256").toString(
+      "base64",
+    );
+    await peopleStore.applyPeople([
+      {
+        id: 7,
+        fullName: "Zainab Khan",
+        initials: "ZK",
+        pinVerifier: `pbkdf2_sha256$1000$salt$${hash}`,
+        active: true,
+        unlockedAt: null,
+      },
+    ]);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => Promise.reject(new TypeError("Failed to fetch"))),
+    );
+    await renderSignIn();
+
+    await submitCashier("zainab khan", "4821");
+
+    expect(await screen.findByText("Start your shift")).toBeInTheDocument();
+    expect(getSession()).toMatchObject({ userId: 7, offline: true });
   });
 });
