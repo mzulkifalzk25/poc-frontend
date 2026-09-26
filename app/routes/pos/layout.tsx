@@ -2,6 +2,7 @@ import { Outlet, redirect, useLoaderData } from "react-router";
 
 import { CurrentBillProvider } from "~/components/pos/bill/CurrentBillProvider";
 import { CashierTopBar } from "~/components/pos/CashierTopBar";
+import { SyncPill } from "~/components/pos/SyncPill";
 import { useCounterSync } from "~/components/pos/useCounterSync";
 import { useHeartbeat } from "~/components/pos/useHeartbeat";
 import { useUploadWorker } from "~/components/pos/useUploadWorker";
@@ -55,6 +56,7 @@ export default function PosLayout() {
         storeName={storeName}
         counterName={counter?.name ?? null}
         cashierName={shift?.cashierName ?? null}
+        statusPill={<SyncPill />}
       />
       <main className="flex-1">
         <CurrentBillProvider>

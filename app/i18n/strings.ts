@@ -267,6 +267,21 @@ export const en = {
     back: "Back to billing",
     notFound: "This bill is not on this PC any more.",
   },
+  syncStatus: {
+    synced: "Online · all sales synced",
+    syncing: (total: number) =>
+      total === 1
+        ? "Online · 1 sale syncing"
+        : `Online · ${count(total)} sales syncing`,
+    offline: (total: number) =>
+      total === 1
+        ? "Offline · 1 sale saved on this device"
+        : `Offline · ${count(total)} sales saved on this device`,
+    rejected: (total: number) =>
+      total === 1
+        ? "1 sale could not be uploaded. Call support."
+        : `${count(total)} sales could not be uploaded. Call support.`,
+  },
   posNav: {
     returns: "Returns",
     held: "Held bills",
