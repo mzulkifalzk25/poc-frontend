@@ -49,7 +49,7 @@ function EyeToggle({
       type="button"
       onClick={onToggle}
       aria-label={t().signIn.admin.showPassword}
-      className="flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center border-0 bg-transparent p-0 text-[#34445A]"
+      className="flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-[#34445A] hover:bg-border/60 focus-visible:ring-2 focus-visible:ring-blue focus-visible:outline-none active:bg-border"
     >
       {shown ? (
         <svg
@@ -180,7 +180,7 @@ export function AdminSignInForm({
       <button
         type="submit"
         disabled={pending || login.trim() === "" || password === ""}
-        className="mt-1 flex h-[50px] items-center justify-center gap-2.5 rounded-input bg-blue text-base font-semibold text-white transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50"
+        className="mt-1 flex h-[50px] items-center justify-center gap-2.5 rounded-input bg-blue text-base font-semibold text-white transition hover:brightness-[.92] focus-visible:ring-2 focus-visible:ring-blue focus-visible:ring-offset-2 focus-visible:outline-none active:brightness-[.85] disabled:cursor-not-allowed disabled:opacity-50"
       >
         {pending ? t().signIn.signingIn : strings.submit}
         {!pending && (
