@@ -225,6 +225,8 @@ export const en = {
       savedHere: "Saved on this device. It syncs to the server automatically.",
       printReceipt: "Print receipt",
       newSale: "New sale",
+      notSaved:
+        "This sale could not be saved on this PC. The bill is still here. Try Pay again.",
       previewLabel: "Receipt preview",
       previewBill: (billNo: string) => `Bill ${billNo}`,
       previewTotal: "TOTAL",

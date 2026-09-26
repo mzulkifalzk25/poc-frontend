@@ -15,6 +15,10 @@ import BillingRoute, { clientLoader } from "./billing";
 
 const Stub = createRoutesStub([
   {
+    path: "/pos/receipt",
+    Component: () => <div>Receipt page</div>,
+  },
+  {
     path: "/pos",
     loader: clientLoader,
     Component: () => (
@@ -362,6 +366,40 @@ describe("Billing desk: payment", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(screen.getByText("Ready for the next customer")).toBeInTheDocument();
     expect(scanBox).toHaveFocus();
+  });
+
+  it("saves the sale on this PC before showing the payment, then moves to the next bill number", async () => {
+    const { user } = await billOf650();
+    await user.click(screen.getByRole("radio", { name: "Wallet" }));
+
+    await user.click(screen.getByRole("button", { name: /pay & print/i }));
+    const dialog = await screen.findByRole("dialog", {
+      name: "Payment received",
+    });
+
+    const queued = await db.bills_outbox.toArray();
+    expect(queued).toHaveLength(1);
+    expect(queued[0]?.payload).toMatchObject({
+      bill_no: "002000743",
+      payment: { method: "wallet", amount: "650.00" },
+    });
+    expect((await db.stock.get(2))?.qty).toBe("-2.000");
+    expect(await db.recent_bills.count()).toBe(1);
+
+    await user.click(within(dialog).getByRole("button", { name: "New sale" }));
+    expect(await screen.findByText("002-000744")).toBeInTheDocument();
+  });
+
+  it("prints from the recent bill after payment", async () => {
+    const { user } = await billOf650();
+    await user.click(screen.getByRole("radio", { name: "Card" }));
+    await user.click(screen.getByRole("button", { name: /pay & print/i }));
+
+    await user.click(
+      await screen.findByRole("button", { name: "Print receipt" }),
+    );
+
+    expect(await screen.findByText("Receipt page")).toBeInTheDocument();
   });
 
   it("pays with F9 only when the bill can be paid", async () => {

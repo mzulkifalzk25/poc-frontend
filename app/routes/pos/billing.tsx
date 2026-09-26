@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import { useLoaderData, useNavigate } from "react-router";
+import { useLoaderData, useNavigate, useRevalidator } from "react-router";
 
 import { BillActions } from "~/components/pos/bill/BillActions";
 import { BillTable } from "~/components/pos/bill/BillTable";
@@ -16,7 +16,7 @@ import { useCounterKeys } from "~/components/pos/useCounterKeys";
 import { useAsyncData } from "~/components/ui/useAsyncData";
 import { billTotals, type ScannedProduct } from "~/domain/bill";
 import { nextBillNumber } from "~/domain/bill-number";
-import { completeBill, type CompletedBill } from "~/domain/completed-bill";
+import type { CompletedBill } from "~/domain/completed-bill";
 import { canPay } from "~/domain/payment";
 import { t } from "~/i18n/t";
 import { counterClock } from "~/infrastructure/clock";
@@ -25,11 +25,13 @@ import { META_KEYS } from "~/infrastructure/db/meta-keys";
 import { metaStore } from "~/infrastructure/db/meta-store";
 import { shiftStore } from "~/infrastructure/db/shift-store";
 import { getDeviceCounter } from "~/infrastructure/session/device-store";
+import { completeSaleDeps } from "~/infrastructure/sync/sale-deps";
 import {
   loadStoreSettings,
   scanDeps,
   searchDeps,
 } from "~/infrastructure/sync/scan-deps";
+import { completeSale } from "~/use_cases/complete-sale";
 
 const QUICK_TABS = 3;
 const QUICK_TILES = 8;
@@ -88,6 +90,8 @@ export default function BillingRoute() {
   const [search, setSearch] = useState<SearchState | null>(null);
   const [completed, setCompleted] = useState<CompletedBill | null>(null);
   const navigate = useNavigate();
+  const revalidator = useRevalidator();
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   function closeSearch() {
     setSearch(null);
@@ -110,31 +114,36 @@ export default function BillingRoute() {
   );
   const canHold = state.lines.length > 0;
 
-  function pay() {
+  async function pay() {
     if (!payable || !data.shift || !data.billNo) {
       return;
     }
-    setCompleted(
-      completeBill({
-        id: crypto.randomUUID(),
-        paymentId: crypto.randomUUID(),
-        billNo: data.billNo,
-        shiftId: data.shift.id,
-        cashierId: data.shift.cashierId,
-        cashierName: data.shift.cashierName,
-        counterName: data.counterName,
-        soldAt: counterClock.now().toISOString(),
-        lines: state.lines,
-        taxRule: data.taxRule,
-        method: state.method,
-        received: receivedPaisa(state.received),
-      }),
+    const result = await completeSale(completeSaleDeps, {
+      id: crypto.randomUUID(),
+      paymentId: crypto.randomUUID(),
+      billNo: data.billNo,
+      shiftId: data.shift.id,
+      cashierId: data.shift.cashierId,
+      cashierName: data.shift.cashierName,
+      counterName: data.counterName,
+      soldAt: counterClock.now().toISOString(),
+      lines: state.lines,
+      taxRule: data.taxRule,
+      method: state.method,
+      received: receivedPaisa(state.received),
+    });
+    setSaveError(
+      result.status === "saved" ? null : t().billing.payment.notSaved,
     );
+    if (result.status === "saved") {
+      setCompleted(result.bill);
+    }
   }
 
   function newSale() {
     dispatch({ type: "clear" });
     setCompleted(null);
+    void revalidator.revalidate();
     scanRef.current?.focus();
   }
 
@@ -144,7 +153,7 @@ export default function BillingRoute() {
       scanRef.current?.focus();
     },
     Escape: search ? closeSearch : undefined,
-    F9: completed ? undefined : pay,
+    F9: completed ? undefined : () => void pay(),
   });
 
   return (
@@ -222,11 +231,19 @@ export default function BillingRoute() {
             dispatch({ type: "received", text });
           }}
         />
+        {saveError && (
+          <p
+            role="alert"
+            className="rounded-lg bg-error-bg px-3.5 py-2.5 text-sm font-semibold text-error-text"
+          >
+            {saveError}
+          </p>
+        )}
         <BillActions
           canPay={payable}
           canHold={canHold}
           canClear={state.lines.length > 0}
-          onPay={pay}
+          onPay={() => void pay()}
           onClear={() => {
             dispatch({ type: "clear" });
           }}

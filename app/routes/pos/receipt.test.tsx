@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createRoutesStub } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -86,7 +86,9 @@ describe("80 mm receipt", () => {
       screen.getByRole("img", { name: "Bill number barcode 002-000743" }),
     ).toBeInTheDocument();
     expect(receipt).toHaveTextContent("Thank you, come again");
-    expect(print).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(print).toHaveBeenCalledTimes(1);
+    });
   });
 
   it("prints card payments without cash lines and hides the barcode when turned off", async () => {
@@ -144,9 +146,11 @@ describe("80 mm receipt", () => {
     await recentBillStore.save(recentBillRow(completedBill("bill-1")));
     render(<Stub initialEntries={["/pos/receipt?bill=bill-1"]} />);
 
-    await user.click(
-      await screen.findByRole("button", { name: "Print again" }),
-    );
+    const again = await screen.findByRole("button", { name: "Print again" });
+    await waitFor(() => {
+      expect(print).toHaveBeenCalledTimes(1);
+    });
+    await user.click(again);
     expect(print).toHaveBeenCalledTimes(2);
     await user.click(screen.getByRole("link", { name: "Back to billing" }));
 
