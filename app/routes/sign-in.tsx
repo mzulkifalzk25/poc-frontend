@@ -82,6 +82,19 @@ function OnlineIndicator() {
   );
 }
 
+function RoleDescription({ lines }: { lines: readonly string[] }) {
+  return (
+    <>
+      {lines.map((line, index) => (
+        <span key={line} className="block">
+          {line}
+          {index < lines.length - 1 ? " " : ""}
+        </span>
+      ))}
+    </>
+  );
+}
+
 function NotActivatedNotice() {
   return (
     <p className="rounded-input bg-warning-bg px-3.5 py-2.5 text-sm text-warning">
@@ -123,7 +136,7 @@ export default function SignInRoute() {
     if (result.status === "success") {
       void navigate("/admin");
     } else if (result.status === "invalid_credentials") {
-      setAdminError("Wrong email, username or password.");
+      setAdminError(t().signIn.admin.invalidCredentials);
     } else {
       setAdminError(t().signIn.offline);
     }
@@ -154,8 +167,8 @@ export default function SignInRoute() {
       <div className="flex overflow-hidden rounded-xl shadow-2xl">
         <SignInBrandPanel />
         <div className="flex w-[592px] flex-col bg-off-white px-11 py-[22px]">
-          <div className="h-4 text-right text-xs text-text-secondary">
-            Version 1.0 (POC)
+          <div className="h-4 text-end text-xs text-text-secondary">
+            {t().signIn.version}
           </div>
 
           <div className="mt-2 flex flex-col items-center gap-1">
@@ -163,29 +176,23 @@ export default function SignInRoute() {
             <div className="mt-1 font-heading text-[42px] leading-tight font-bold">
               Mart<span className="text-gold">Desk</span>
             </div>
-            <div className="text-sm text-[#34445A]">
-              POS &amp; Store Management
-            </div>
+            <div className="text-sm text-[#34445A]">{t().brand.tagline}</div>
           </div>
 
           <div className="mt-5 flex flex-col items-center gap-1 text-center">
             <div className="font-heading text-3xl font-bold tracking-tight">
-              Welcome back!
+              {t().signIn.welcome}
             </div>
             <div className="text-sm text-text-secondary">
-              Please select your role and sign in to continue.
+              {t().signIn.chooseRole}
             </div>
           </div>
 
           <div className="mt-5 grid grid-cols-2 gap-4">
             <RoleCard
-              label="Cashier"
+              label={t().signIn.roles.cashier.label}
               description={
-                <>
-                  Access the POS and
-                  <br />
-                  manage sales
-                </>
+                <RoleDescription lines={t().signIn.roles.cashier.description} />
               }
               icon={cashierIcon}
               selected={role === "cashier"}
@@ -194,13 +201,9 @@ export default function SignInRoute() {
               }}
             />
             <RoleCard
-              label="Admin"
+              label={t().signIn.roles.admin.label}
               description={
-                <>
-                  Manage store, inventory,
-                  <br />
-                  staff and reports
-                </>
+                <RoleDescription lines={t().signIn.roles.admin.description} />
               }
               icon={adminIcon}
               selected={role === "admin"}
@@ -240,7 +243,7 @@ export default function SignInRoute() {
 
           <div className="mt-3.5 flex items-center justify-between border-t border-border pt-3.5 text-xs text-text-secondary">
             <OnlineIndicator />
-            <span>MartDesk POS</span>
+            <span>{t().brand.footer}</span>
           </div>
         </div>
       </div>

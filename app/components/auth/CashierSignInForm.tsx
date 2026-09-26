@@ -108,6 +108,7 @@ export function CashierSignInForm({
   const [name, setName] = useState("");
   const [pin, setPin] = useState("");
   const [pinShown, setPinShown] = useState(false);
+  const strings = t().signIn.cashier;
 
   return (
     <form
@@ -118,7 +119,9 @@ export function CashierSignInForm({
       }}
     >
       <div className="flex flex-col gap-1.5">
-        <span className="text-sm font-semibold text-text">Counter</span>
+        <span className="text-sm font-semibold text-text">
+          {strings.counter}
+        </span>
         <div className="flex h-[46px] items-center rounded-input border border-border bg-border/40 px-3.5 text-sm text-text-secondary">
           {counterLabel}
         </div>
@@ -128,12 +131,12 @@ export function CashierSignInForm({
           htmlFor="cashier-name"
           className="text-sm font-semibold text-text"
         >
-          Cashier name
+          {strings.name}
         </label>
         <Input
           id="cashier-name"
           type="text"
-          placeholder="Enter your name"
+          placeholder={strings.namePlaceholder}
           autoComplete="off"
           leadingIcon={personIcon}
           value={name}
@@ -147,14 +150,14 @@ export function CashierSignInForm({
           htmlFor="cashier-pin"
           className="text-sm font-semibold text-text"
         >
-          PIN
+          {strings.pin}
         </label>
         <Input
           id="cashier-pin"
           type={pinShown ? "text" : "password"}
           inputMode="numeric"
           maxLength={4}
-          placeholder="Enter your 4-digit PIN"
+          placeholder={strings.pinPlaceholder}
           leadingIcon={lockIcon}
           value={pin}
           disabled={throttledSecondsRemaining !== null}
@@ -167,7 +170,7 @@ export function CashierSignInForm({
               onToggle={() => {
                 setPinShown((current) => !current);
               }}
-              label="Show or hide PIN"
+              label={strings.showPin}
             />
           }
         />
@@ -191,8 +194,8 @@ export function CashierSignInForm({
             <path d="M12 7v5l3 2" />
           </svg>
           <span>
-            <b>{t().signIn.cashier.throttledTitle}</b>{" "}
-            {t().signIn.cashier.throttledWait(throttledSecondsRemaining)}
+            <b>{strings.throttledTitle}</b>{" "}
+            {strings.throttledWait(throttledSecondsRemaining)}
           </span>
         </p>
       )}
@@ -212,7 +215,7 @@ export function CashierSignInForm({
         }
         className="mt-1 flex h-[50px] items-center justify-center gap-2.5 rounded-input bg-blue text-base font-semibold text-white transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {pending ? "Signing in…" : "Sign In"}
+        {pending ? t().signIn.signingIn : strings.submit}
         {!pending && (
           <svg
             width="18"

@@ -1,42 +1,34 @@
 import { Logo } from "~/components/ui/Logo";
-
-const features = [
-  "Fast & Reliable Billing",
-  "Real-time Inventory",
-  "Detailed Reports",
-  "Secure & Easy to Use",
-];
+import { t } from "~/i18n/t";
 
 export function SignInBrandPanel() {
+  const strings = t().signIn.panel;
   return (
-    <div className="relative hidden w-[800px] flex-shrink-0 overflow-hidden rounded-l-xl bg-navy-deep text-white lg:block">
-      <div className="absolute top-8 right-10 h-[220px] w-[300px] rounded-full bg-gold/16 blur-[50px]" />
-      <div className="absolute top-[90px] left-[250px] h-[160px] w-[260px] rounded-full bg-white/7 blur-[45px]" />
+    <div className="relative hidden w-[800px] flex-shrink-0 overflow-hidden rounded-s-xl bg-navy-deep text-white lg:block">
+      <div className="absolute end-10 top-8 h-[220px] w-[300px] rounded-full bg-gold/16 blur-[50px]" />
+      <div className="absolute start-[250px] top-[90px] h-[160px] w-[260px] rounded-full bg-white/7 blur-[45px]" />
 
-      <div className="absolute top-11 left-12 flex items-center gap-4">
+      <div className="absolute start-12 top-11 flex items-center gap-4">
         <Logo variant="gold" size={66} />
         <div>
           <div className="font-heading text-4xl leading-none font-bold">
             Mart<span className="text-gold">Desk</span>
           </div>
-          <div className="text-lg text-[#E6ECF3]">
-            POS &amp; Store Management
-          </div>
+          <div className="text-lg text-[#E6ECF3]">{t().brand.tagline}</div>
         </div>
       </div>
 
-      <div className="absolute top-[214px] left-12 flex max-w-[400px] flex-col gap-[18px]">
+      <div className="absolute start-12 top-[214px] flex max-w-[400px] flex-col gap-[18px]">
         <div className="font-heading text-4xl leading-[1.16] font-bold tracking-tight">
-          Smarter Store Management.
+          {strings.headline}
           <br />
-          <span className="text-gold">Better Business.</span>
+          <span className="text-gold">{strings.headlineAccent}</span>
         </div>
         <p className="text-base leading-relaxed text-[#E6ECF3]">
-          Manage your products, staff, inventory, sales and reports, all in one
-          place.
+          {strings.copy}
         </p>
         <div className="mt-5 flex flex-col gap-4">
-          {features.map((feature) => (
+          {strings.features.map((feature) => (
             <div key={feature} className="flex items-center gap-3.5">
               <span className="flex h-[38px] w-[38px] flex-shrink-0 items-center justify-center rounded-[10px] border-[1.5px] border-white/35">
                 <svg
@@ -60,7 +52,7 @@ export function SignInBrandPanel() {
         </div>
       </div>
 
-      <div className="absolute bottom-[34px] left-12 flex items-center gap-2.5 text-sm text-[#C3D0DF]">
+      <div className="absolute start-12 bottom-[34px] flex items-center gap-2.5 text-sm text-[#C3D0DF]">
         <svg
           width="16"
           height="16"
@@ -77,7 +69,7 @@ export function SignInBrandPanel() {
         </svg>
         <span className="font-semibold text-white">MartDesk</span>
         <span className="text-[#8FA0B5]">|</span>
-        <span>Built for Modern Marts</span>
+        <span>{strings.builtFor}</span>
       </div>
     </div>
   );

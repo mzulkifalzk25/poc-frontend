@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { Input } from "~/components/ui/Input";
+import { t } from "~/i18n/t";
 
 const personIcon = (
   <svg
@@ -47,7 +48,7 @@ function EyeToggle({
     <button
       type="button"
       onClick={onToggle}
-      aria-label="Show or hide password"
+      aria-label={t().signIn.admin.showPassword}
       className="flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center border-0 bg-transparent p-0 text-[#34445A]"
     >
       {shown ? (
@@ -98,6 +99,7 @@ export function AdminSignInForm({
   const [password, setPassword] = useState("");
   const [passwordShown, setPasswordShown] = useState(false);
   const [remember, setRemember] = useState(true);
+  const strings = t().signIn.admin;
 
   return (
     <form
@@ -112,12 +114,12 @@ export function AdminSignInForm({
           htmlFor="admin-login"
           className="text-sm font-semibold text-text"
         >
-          Email or username
+          {strings.login}
         </label>
         <Input
           id="admin-login"
           type="text"
-          placeholder="Enter your email or username"
+          placeholder={strings.loginPlaceholder}
           leadingIcon={personIcon}
           value={login}
           onChange={(event) => {
@@ -131,16 +133,16 @@ export function AdminSignInForm({
             htmlFor="admin-password"
             className="text-sm font-semibold text-text"
           >
-            Password
+            {strings.password}
           </label>
           <span className="text-[13px] font-semibold text-blue">
-            Forgot password?
+            {strings.forgotPassword}
           </span>
         </div>
         <Input
           id="admin-password"
           type={passwordShown ? "text" : "password"}
-          placeholder="Enter your password"
+          placeholder={strings.passwordPlaceholder}
           leadingIcon={lockIcon}
           value={password}
           onChange={(event) => {
@@ -165,11 +167,10 @@ export function AdminSignInForm({
           }}
           className="h-[18px] w-[18px] accent-blue"
         />
-        Keep me signed in on this device
+        {strings.keepSignedIn}
       </label>
       <p className="text-xs leading-relaxed text-text-secondary">
-        Owners and managers sign in here with a password. Cashiers use their PIN
-        at the counter. The owner resets a forgotten password.
+        {strings.note}
       </p>
       {error && (
         <p className="rounded-input bg-error-bg px-3 py-2 text-sm text-error-text">
@@ -181,7 +182,7 @@ export function AdminSignInForm({
         disabled={pending || login.trim() === "" || password === ""}
         className="mt-1 flex h-[50px] items-center justify-center gap-2.5 rounded-input bg-blue text-base font-semibold text-white transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {pending ? "Signing in…" : "Sign In to Admin"}
+        {pending ? t().signIn.signingIn : strings.submit}
         {!pending && (
           <svg
             width="18"
