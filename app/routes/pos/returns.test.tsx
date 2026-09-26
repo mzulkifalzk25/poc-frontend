@@ -397,3 +397,111 @@ describe("Returns: cashback, reason and restock", () => {
     expect(restock).toBeChecked();
   });
 });
+
+describe("Returns: refund", () => {
+  it("keeps Refund off until an item is scanned", async () => {
+    await openReturns();
+
+    expect(
+      screen.getByRole("button", { name: "Scan an item first" }),
+    ).toBeDisabled();
+  });
+
+  it("refunds two items in cash: queued, restocked and taken off the drawer", async () => {
+    await db.stock.put({ productId: 6, qty: "5.000" });
+    const { user, scanBox } = await openReturns();
+    await user.type(scanBox, "8961006700066{Enter}");
+    await user.type(scanBox, "8961002300022{Enter}");
+    await screen.findByLabelText("Quantity of Cooking Oil 1L");
+
+    await user.click(screen.getByRole("button", { name: "Refund Rs 1,040" }));
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "Refund recorded",
+    });
+    expect(dialog).toHaveTextContent("Rs 1,040 · Cash from the drawer");
+    expect(dialog).toHaveTextContent("Items returned2");
+    expect(dialog).toHaveTextContent("Stock+2 back on shelf");
+    expect(dialog).toHaveTextContent("Drawer− Rs 1,040");
+    expect(dialog).toHaveTextContent(
+      "Saved on this device. It syncs to the server automatically.",
+    );
+    const queued = await db.returns_outbox.toArray();
+    expect(queued).toHaveLength(1);
+    expect(queued[0]?.payload).toMatchObject({
+      shift_id: "shift-1",
+      reason: "changed_mind",
+      restock: true,
+      refund: { method: "cash", amount: "1040.00" },
+      lines: [
+        { product_id: 6, qty: "1.000" },
+        { product_id: 2, qty: "1.000" },
+      ],
+    });
+    expect((await db.stock.get(6))?.qty).toBe("6.000");
+    expect((await shiftStore.get("shift-1"))?.refunds).toEqual([
+      { amount: 104_000, paidFromDrawer: true },
+    ]);
+  });
+
+  it("records a damaged item refunded by card without stock or drawer change", async () => {
+    const { user, scanBox } = await openReturns();
+    await user.type(scanBox, "8961006700066{Enter}");
+    await screen.findByLabelText("Quantity of Eggs (dozen)");
+    await user.click(screen.getByRole("radio", { name: "Damaged or expired" }));
+    await user.click(screen.getByRole("radio", { name: "Card" }));
+
+    await user.click(screen.getByRole("button", { name: "Refund Rs 420" }));
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "Refund recorded",
+    });
+    expect(dialog).toHaveTextContent("StockNot added back");
+    expect(dialog).toHaveTextContent("DrawerNo change");
+    expect(await db.stock.get(6)).toBeUndefined();
+    expect((await db.returns_outbox.toArray())[0]?.payload).toMatchObject({
+      reason: "expired_damaged",
+      restock: false,
+    });
+  });
+
+  it("sends the typed bill number even when the bill was not found", async () => {
+    installFakeFetch({
+      "GET /bills/lookup": () =>
+        jsonResponse(404, {
+          error: { code: "bill_not_found", message: "No bill" },
+        }),
+    });
+    const { user, scanBox } = await openReturns();
+    await user.type(scanBox, "8961006700066{Enter}");
+    await screen.findByLabelText("Quantity of Eggs (dozen)");
+    await user.type(screen.getByLabelText(/Bill number/), "001-000498{Enter}");
+    await screen.findByText(/was not found/);
+
+    await user.click(screen.getByRole("button", { name: "Refund Rs 420" }));
+    await screen.findByRole("dialog", { name: "Refund recorded" });
+
+    expect((await db.returns_outbox.toArray())[0]?.payload).toMatchObject({
+      original_bill_no: "001000498",
+    });
+  });
+
+  it("starts a clean return after New return", async () => {
+    const { user, scanBox } = await openReturns();
+    await user.type(scanBox, "8961006700066{Enter}");
+    await screen.findByLabelText("Quantity of Eggs (dozen)");
+    await user.click(screen.getByRole("radio", { name: "Wallet" }));
+    await user.click(screen.getByRole("button", { name: "Refund Rs 420" }));
+
+    await user.click(await screen.findByRole("button", { name: "New return" }));
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByText("Nothing to return yet")).toBeInTheDocument();
+    expect(
+      screen.getByRole("radio", { name: "Cash from the drawer" }),
+    ).toHaveAttribute("aria-checked", "true");
+    expect(
+      screen.getByLabelText("Scan a returned item or search by name"),
+    ).toHaveFocus();
+  });
+});

@@ -14,30 +14,42 @@ import {
 } from "~/components/pos/returns/BillNumberBar";
 import { ReturnOptions } from "~/components/pos/returns/ReturnOptions";
 import { ReturnPriceTag } from "~/components/pos/returns/ReturnPriceTag";
+import { RefundRecordedOverlay } from "~/components/pos/returns/RefundRecordedOverlay";
 import { ReturnSummary } from "~/components/pos/returns/ReturnSummary";
 import { SearchOverlay } from "~/components/pos/search/SearchOverlay";
 import { useCounterKeys } from "~/components/pos/useCounterKeys";
 import type { ScannedProduct } from "~/domain/bill";
+import { formatPaisa } from "~/domain/money";
 import type { PaymentMethod } from "~/domain/payment";
 import {
   DEFAULT_REASON,
   defaultRestock,
   returnTotals,
+  type CompletedReturn,
   type ReturnReason,
 } from "~/domain/return";
 import { t } from "~/i18n/t";
+import { counterClock } from "~/infrastructure/clock";
 import { catalogueStore } from "~/infrastructure/db/catalogue-store";
+import { shiftStore } from "~/infrastructure/db/shift-store";
+import { getDeviceCounter } from "~/infrastructure/session/device-store";
 import { billLookupDeps } from "~/infrastructure/sync/bill-lookup-deps";
 import {
   loadStoreSettings,
   returnScanDeps,
   searchDeps,
 } from "~/infrastructure/sync/scan-deps";
-import { lookupBill } from "~/use_cases/lookup-bill";
+import { lookupBill, normalizeBillNo } from "~/use_cases/lookup-bill";
+import { processReturn } from "~/use_cases/process-return";
+import { processReturnDeps } from "~/infrastructure/sync/return-deps";
 
 export async function clientLoader() {
   const settings = await loadStoreSettings();
+  const counter = await getDeviceCounter();
   return {
+    shiftId: counter
+      ? ((await shiftStore.current(counter.id))?.id ?? null)
+      : null,
     taxRule: {
       taxRate: settings?.taxRate ?? "0.00",
       pricesIncludeTax: settings?.pricesIncludeTax ?? false,
@@ -100,7 +112,20 @@ function useReturnLines() {
   return { state, dispatch, add };
 }
 
+// Every "New return" starts a fresh desk, so no line, bill or option leaks into the next customer.
 export default function ReturnsRoute() {
+  const [round, setRound] = useState(0);
+  return (
+    <ReturnDesk
+      key={round}
+      onNewReturn={() => {
+        setRound((current) => current + 1);
+      }}
+    />
+  );
+}
+
+function ReturnDesk({ onNewReturn }: { onNewReturn: () => void }) {
   const data = useLoaderData<typeof clientLoader>();
   const { state, dispatch, add } = useReturnLines();
   const scanner = useScanner(returnScanDeps, add);
@@ -121,6 +146,31 @@ export default function ReturnsRoute() {
     bill.lookup.status === "found" ? bill.lookup.bill : null,
     data.taxRule,
   );
+  const [recorded, setRecorded] = useState<CompletedReturn | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  async function refund() {
+    if (!data.shiftId || totals.itemCount === 0) {
+      return;
+    }
+    const result = await processReturn(processReturnDeps, {
+      id: crypto.randomUUID(),
+      shiftId: data.shiftId,
+      lines: state.lines,
+      bill: bill.lookup.status === "found" ? bill.lookup.bill : null,
+      typedBillNo: normalizeBillNo(bill.billText),
+      taxRule: data.taxRule,
+      reason: options.reason,
+      restock: options.restock,
+      method: options.method,
+      returnedAt: counterClock.now().toISOString(),
+    });
+    setSaveError(result.status === "saved" ? null : t().returns.notSaved);
+    if (result.status === "saved") {
+      setRecorded(result.ret);
+    }
+  }
+
   const priced = new Map(totals.lines.map((line) => [line.productId, line]));
   const strings = t().returns;
 
@@ -224,7 +274,28 @@ export default function ReturnsRoute() {
           onReason={options.pickReason}
           onRestock={options.setRestock}
         />
+        {saveError && (
+          <p
+            role="alert"
+            className="rounded-lg bg-error-bg px-3.5 py-2.5 text-sm font-semibold text-error-text"
+          >
+            {saveError}
+          </p>
+        )}
+        <button
+          type="button"
+          disabled={totals.itemCount === 0}
+          onClick={() => void refund()}
+          className="flex h-[68px] items-center justify-center rounded-lg bg-blue text-xl font-bold text-white transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-blue focus-visible:ring-offset-2 focus-visible:outline-none active:brightness-90 disabled:cursor-default disabled:bg-border disabled:text-text-secondary"
+        >
+          {totals.itemCount === 0
+            ? strings.scanFirst
+            : strings.refundButton(formatPaisa(totals.refund))}
+        </button>
       </ReturnSummary>
+      {recorded && (
+        <RefundRecordedOverlay ret={recorded} onNewReturn={onNewReturn} />
+      )}
     </div>
   );
 }

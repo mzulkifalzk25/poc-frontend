@@ -5,6 +5,7 @@ import type {
   AuditEventUpload,
   BillUpload,
   OutboxRow,
+  ReturnUpload,
 } from "~/infrastructure/db/rows";
 
 export const BATCH_SIZE = 50;
@@ -17,6 +18,7 @@ export interface BatchResult {
 
 export interface UploadApi {
   sendBills: (counterId: number, bills: BillUpload[]) => Promise<BatchResult[]>;
+  sendReturns: (returns: ReturnUpload[]) => Promise<BatchResult[]>;
   sendEvents: (events: AuditEventUpload[]) => Promise<BatchResult[]>;
 }
 
@@ -28,6 +30,7 @@ type Queue<P extends { id: string }> = Pick<
 export interface UploadDeps {
   api: UploadApi;
   bills: Queue<BillUpload>;
+  returns: Queue<ReturnUpload>;
   audit: Queue<AuditEventUpload>;
   counterId: () => Promise<number | null>;
   uploadShifts: () => Promise<unknown>;
@@ -104,6 +107,14 @@ async function drain<P extends { id: string }>(
   }
 }
 
+async function blocked<P extends { id: string }>(
+  queue: Queue<P>,
+  run: { failed: boolean },
+) {
+  return run.failed || (await queue.countPending()) > 0;
+}
+
+// Bills first, then returns, then audit events: nothing overtakes an older unsent sale.
 export async function uploadOutbox(deps: UploadDeps): Promise<number> {
   const counterId = await deps.counterId();
   if (counterId === null) {
@@ -115,14 +126,21 @@ export async function uploadOutbox(deps: UploadDeps): Promise<number> {
     (payloads) => deps.api.sendBills(counterId, payloads),
     deps,
   );
-  // Audit events follow the bills, so they never overtake older unsent sales.
-  if (bills.failed || (await deps.bills.countPending()) > 0) {
+  if (await blocked(deps.bills, bills)) {
     return bills.sent;
+  }
+  const returns = await drain(
+    deps.returns,
+    (payloads) => deps.api.sendReturns(payloads),
+    deps,
+  );
+  if (await blocked(deps.returns, returns)) {
+    return bills.sent + returns.sent;
   }
   const events = await drain(
     deps.audit,
     (payloads) => deps.api.sendEvents(payloads),
     deps,
   );
-  return bills.sent + events.sent;
+  return bills.sent + returns.sent + events.sent;
 }

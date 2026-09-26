@@ -82,3 +82,49 @@ export function defaultRestock(reason: ReturnReason): boolean {
 export function drawerEffect(method: PaymentMethod, refund: number): number {
   return method === "cash" ? -refund : 0;
 }
+
+export interface CompletedReturn {
+  id: string;
+  shiftId: string;
+  lines: PricedReturnLine[];
+  itemCount: number;
+  reason: ReturnReason;
+  restock: boolean;
+  method: PaymentMethod;
+  refund: number;
+  billNo: string | null;
+  returnedAt: string;
+}
+
+export interface CompleteReturnInput {
+  id: string;
+  shiftId: string;
+  lines: DraftLine[];
+  bill: BillPrices | null;
+  typedBillNo: string | null;
+  taxRule: TaxRule;
+  reason: ReturnReason;
+  restock: boolean;
+  method: PaymentMethod;
+  returnedAt: string;
+}
+
+// No PIN and no approval: any return with items can be recorded.
+export function completeReturn(input: CompleteReturnInput): CompletedReturn {
+  const totals = returnTotals(input.lines, input.bill, input.taxRule);
+  if (totals.itemCount <= 0) {
+    throw new Error("A return needs at least one item");
+  }
+  return {
+    id: input.id,
+    shiftId: input.shiftId,
+    lines: totals.lines,
+    itemCount: totals.itemCount,
+    reason: input.reason,
+    restock: input.restock,
+    method: input.method,
+    refund: totals.refund,
+    billNo: input.typedBillNo,
+    returnedAt: input.returnedAt,
+  };
+}

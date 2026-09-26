@@ -26,13 +26,13 @@ export async function clientLoader() {
   const counter = await getDeviceCounter();
   const shift = counter ? await shiftStore.current(counter.id) : null;
   const bills = shift ? await recentBillStore.forShift(shift.id) : [];
-  // Refunds join this list with Returns (Step F6).
+  // Refunds are kept on the shift row, so they count after they upload too.
   const totals = shiftTotals(
     bills.map((row) => ({
       method: row.bill.payment.method,
       total: row.bill.totals.total,
     })),
-    [],
+    shift?.refunds ?? [],
   );
   const openingCash = shift ? toPaisa(shift.openingCash) : 0;
   return {

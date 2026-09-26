@@ -260,6 +260,24 @@ describe("End of shift", () => {
     );
   });
 
+  it("takes cash refunds off the expected drawer and lists every refund", async () => {
+    await shiftStore.update("shift-1", {
+      refunds: [
+        { amount: 84_000, paidFromDrawer: true },
+        { amount: 60_000, paidFromDrawer: false },
+      ],
+    });
+
+    await openScreen();
+
+    expect(
+      screen.getByRole("region", { name: "Your shift" }),
+    ).toHaveTextContent("Refunds (2 bills)− Rs 1,440");
+    const drawer = screen.getByRole("region", { name: "Count the drawer" });
+    expect(drawer).toHaveTextContent("Cash refunds (1)− Rs 840");
+    expect(drawer).toHaveTextContent("Expected in drawerRs 6,390");
+  });
+
   it("keeps Close off until the cash is counted", async () => {
     await openScreen();
 

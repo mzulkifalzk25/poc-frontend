@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { DraftLine } from "./bill";
 import {
+  completeReturn,
   defaultRestock,
   drawerEffect,
   priceReturnLine,
@@ -106,5 +107,33 @@ describe("restock and drawer", () => {
     expect(drawerEffect("cash", 57_000)).toBe(-57_000);
     expect(drawerEffect("card", 57_000)).toBe(0);
     expect(drawerEffect("wallet", 57_000)).toBe(0);
+  });
+});
+
+describe("completeReturn", () => {
+  const input = {
+    id: "ret-1",
+    shiftId: "shift-1",
+    lines: [oil, eggs],
+    bill,
+    typedBillNo: "001000498",
+    taxRule: noTax,
+    reason: "changed_mind" as const,
+    restock: true,
+    method: "cash" as const,
+    returnedAt: "2026-09-26T12:52:10.000Z",
+  };
+
+  it("fixes the refund at the prices used", () => {
+    expect(completeReturn(input)).toMatchObject({
+      itemCount: 3,
+      refund: 144_000,
+      billNo: "001000498",
+      restock: true,
+    });
+  });
+
+  it("refuses an empty return", () => {
+    expect(() => completeReturn({ ...input, lines: [] })).toThrow();
   });
 });

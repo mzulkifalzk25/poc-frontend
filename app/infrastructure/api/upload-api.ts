@@ -24,6 +24,14 @@ export const uploadApi: UploadApi = {
         { tokenSource: cashierTokenSource() },
       ),
     ),
+  sendReturns: async (returns) =>
+    toResults(
+      await apiClient.post<BatchResponse>(
+        "/returns/batch",
+        { returns },
+        { tokenSource: cashierTokenSource() },
+      ),
+    ),
   sendEvents: async (events) =>
     toResults(
       await apiClient.post<BatchResponse>(

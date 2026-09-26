@@ -2,7 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 
 import { ApiError } from "~/infrastructure/api/errors";
 import { createOutbox } from "~/infrastructure/db/outbox-store";
-import type { AuditEventUpload, BillUpload } from "~/infrastructure/db/rows";
+import type {
+  AuditEventUpload,
+  BillUpload,
+  ReturnUpload,
+} from "~/infrastructure/db/rows";
 import {
   billUpload,
   freshDatabaseFactory,
@@ -34,6 +38,10 @@ function setup(api: Partial<UploadApi> = {}) {
       order.push(`bills:${String(bills.length)}`);
       return Promise.resolve(created(bills.map((bill) => bill.id)));
     }),
+    sendReturns: vi.fn((returns: ReturnUpload[]) => {
+      order.push(`returns:${String(returns.length)}`);
+      return Promise.resolve(created(returns.map((item) => item.id)));
+    }),
     sendEvents: vi.fn((events: AuditEventUpload[]) => {
       order.push(`events:${String(events.length)}`);
       return Promise.resolve(created(events.map((item) => item.id)));
@@ -43,6 +51,7 @@ function setup(api: Partial<UploadApi> = {}) {
   const deps: UploadDeps = {
     api: fullApi,
     bills: createOutbox(database.bills_outbox),
+    returns: createOutbox(database.returns_outbox),
     audit: createOutbox(database.audit_outbox),
     counterId: () => Promise.resolve(2),
     uploadShifts: vi.fn(() => {
@@ -167,4 +176,47 @@ describe("uploadOutbox", () => {
     await expect(uploadOutbox(deps)).resolves.toBe(0);
     expect(deps.uploadShifts).not.toHaveBeenCalled();
   });
+
+  it("sends returns after the bills and before the audit events", async () => {
+    const { deps, order } = setup();
+    await queueBills(deps, 2);
+    await queueReturn(deps, "r1");
+    await (deps.audit as ReturnType<typeof createOutbox<AuditEventUpload>>).add(
+      event("e1"),
+      1,
+    );
+
+    await expect(uploadOutbox(deps)).resolves.toBe(4);
+
+    expect(order).toEqual(["shifts", "bills:2", "returns:1", "events:1"]);
+  });
+
+  it("holds a return back while an older bill is still unsent", async () => {
+    const { deps, database } = setup({
+      sendBills: () => Promise.reject(new TypeError("offline")),
+    });
+    await queueBills(deps, 1);
+    await queueReturn(deps, "r1");
+
+    await uploadOutbox(deps);
+
+    expect(deps.api.sendReturns).not.toHaveBeenCalled();
+    expect(await database.returns_outbox.count()).toBe(1);
+  });
 });
+
+async function queueReturn(deps: UploadDeps, id: string) {
+  const outbox = deps.returns as ReturnType<typeof createOutbox<ReturnUpload>>;
+  await outbox.add(
+    {
+      id,
+      shift_id: "shift-1",
+      lines: [{ product_id: 6, qty: "1.000" }],
+      reason: "changed_mind",
+      restock: true,
+      refund: { method: "cash", amount: "420.00" },
+      returned_at: "2026-09-26T12:52:10.000Z",
+    },
+    5000,
+  );
+}

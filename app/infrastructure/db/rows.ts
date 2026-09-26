@@ -87,8 +87,16 @@ export interface AuditEventUpload {
   detail?: Record<string, unknown>;
 }
 
-// Returns are defined in Step F6; the outbox only needs the client id.
-export type ReturnUpload = { id: string } & Record<string, unknown>;
+export interface ReturnUpload {
+  id: string;
+  shift_id: string;
+  lines: { product_id: number; qty: string }[];
+  reason: "expired_damaged" | "wrong_item" | "changed_mind" | "price_error";
+  restock: boolean;
+  refund: { method: "cash" | "card" | "wallet"; amount: string };
+  original_bill_no?: string;
+  returned_at: string;
+}
 
 export type ShiftSyncState =
   "open_pending" | "open_synced" | "close_pending" | "closed_synced";
@@ -108,6 +116,8 @@ export interface ShiftRow {
   closeSummary?: Record<string, string | number> | null;
   unsyncedAtClose?: number | null;
   serverResult?: ShiftServerResult | null;
+  // Refunds made in this shift (paisa); kept here so End of shift works after they upload.
+  refunds?: { amount: number; paidFromDrawer: boolean }[];
 }
 
 export interface ShiftServerResult {

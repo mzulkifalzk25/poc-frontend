@@ -399,6 +399,20 @@ export const en = {
     restock: "Put back in stock",
     noApproval:
       "No approval needed. Every refund is saved with your name and shows in the owner's Money trail.",
+    recorded: "Refund recorded",
+    recordedSummary: (amount: string, method: string) =>
+      `${amount} · ${method}`,
+    itemsReturned: "Items returned",
+    stock: "Stock",
+    stockBack: (items: number) => `+${count(items)} back on shelf`,
+    stockNot: "Not added back",
+    drawer: "Drawer",
+    drawerOut: (amount: string) => `− ${amount}`,
+    drawerNone: "No change",
+    saved: "Saved on this device. It syncs to the server automatically.",
+    newReturn: "New return",
+    notSaved:
+      "This refund could not be saved on this PC. Nothing was recorded. Try again.",
     billLabel: "Bill number",
     billOptional: "(optional)",
     billPlaceholder: "e.g. 001-000498",
