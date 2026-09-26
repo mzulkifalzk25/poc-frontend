@@ -217,6 +217,17 @@ export const en = {
       stillToCollect: "Still to collect",
       terminal: "Waiting for the customer to complete payment on the terminal.",
       pay: "Pay & print",
+      receivedTitle: "Payment received",
+      summary: (total: string, method: string, change: string | null) =>
+        change === null
+          ? `${total} · ${method}`
+          : `${total} · ${method} · Change ${change}`,
+      savedHere: "Saved on this device. It syncs to the server automatically.",
+      printReceipt: "Print receipt",
+      newSale: "New sale",
+      previewLabel: "Receipt preview",
+      previewBill: (billNo: string) => `Bill ${billNo}`,
+      previewTotal: "TOTAL",
       hold: "Hold bill",
       clear: "Clear bill",
     },

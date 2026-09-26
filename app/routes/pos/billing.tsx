@@ -1,10 +1,11 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import { useLoaderData } from "react-router";
+import { useLoaderData, useNavigate } from "react-router";
 
 import { BillActions } from "~/components/pos/bill/BillActions";
 import { BillTable } from "~/components/pos/bill/BillTable";
 import { useCurrentBill } from "~/components/pos/bill/CurrentBillProvider";
 import { CurrentBillPanel } from "~/components/pos/bill/CurrentBillPanel";
+import { PaymentReceivedOverlay } from "~/components/pos/bill/PaymentReceivedOverlay";
 import { PaymentSection } from "~/components/pos/bill/PaymentSection";
 import { receivedPaisa } from "~/components/pos/bill/received";
 import { QuickItems } from "~/components/pos/bill/QuickItems";
@@ -15,11 +16,14 @@ import { useCounterKeys } from "~/components/pos/useCounterKeys";
 import { useAsyncData } from "~/components/ui/useAsyncData";
 import { billTotals, type ScannedProduct } from "~/domain/bill";
 import { nextBillNumber } from "~/domain/bill-number";
+import { completeBill, type CompletedBill } from "~/domain/completed-bill";
 import { canPay } from "~/domain/payment";
 import { t } from "~/i18n/t";
+import { counterClock } from "~/infrastructure/clock";
 import { catalogueStore } from "~/infrastructure/db/catalogue-store";
 import { META_KEYS } from "~/infrastructure/db/meta-keys";
 import { metaStore } from "~/infrastructure/db/meta-store";
+import { shiftStore } from "~/infrastructure/db/shift-store";
 import { getDeviceCounter } from "~/infrastructure/session/device-store";
 import {
   loadStoreSettings,
@@ -35,6 +39,9 @@ export async function clientLoader() {
   const settings = await loadStoreSettings();
   const lastSeq = (await metaStore.get<number>(META_KEYS.billSeq)) ?? 0;
   return {
+    counterName: counter?.name ?? "",
+    storeName: settings?.storeName ?? "",
+    shift: counter ? await shiftStore.current(counter.id) : null,
     billNo: counter ? nextBillNumber(counter.code, lastSeq) : null,
     taxRule: {
       taxRate: settings?.taxRate ?? "0.00",
@@ -79,6 +86,8 @@ export default function BillingRoute() {
   );
   const [tabId, setTabId] = useState(tabs[0]?.id ?? null);
   const [search, setSearch] = useState<SearchState | null>(null);
+  const [completed, setCompleted] = useState<CompletedBill | null>(null);
+  const navigate = useNavigate();
 
   function closeSearch() {
     setSearch(null);
@@ -102,7 +111,31 @@ export default function BillingRoute() {
   const canHold = state.lines.length > 0;
 
   function pay() {
-    // Completing the bill (outbox transaction and receipt) is added in the next branches.
+    if (!payable || !data.shift || !data.billNo) {
+      return;
+    }
+    setCompleted(
+      completeBill({
+        id: crypto.randomUUID(),
+        paymentId: crypto.randomUUID(),
+        billNo: data.billNo,
+        shiftId: data.shift.id,
+        cashierId: data.shift.cashierId,
+        cashierName: data.shift.cashierName,
+        counterName: data.counterName,
+        soldAt: counterClock.now().toISOString(),
+        lines: state.lines,
+        taxRule: data.taxRule,
+        method: state.method,
+        received: receivedPaisa(state.received),
+      }),
+    );
+  }
+
+  function newSale() {
+    dispatch({ type: "clear" });
+    setCompleted(null);
+    scanRef.current?.focus();
   }
 
   useCounterKeys({
@@ -111,11 +144,7 @@ export default function BillingRoute() {
       scanRef.current?.focus();
     },
     Escape: search ? closeSearch : undefined,
-    F9: () => {
-      if (payable) {
-        pay();
-      }
-    },
+    F9: completed ? undefined : pay,
   });
 
   return (
@@ -203,6 +232,16 @@ export default function BillingRoute() {
           }}
         />
       </CurrentBillPanel>
+      {completed && (
+        <PaymentReceivedOverlay
+          bill={completed}
+          storeName={data.storeName}
+          onPrint={() => {
+            void navigate(`/pos/receipt?bill=${completed.id}`);
+          }}
+          onNewSale={newSale}
+        />
+      )}
     </div>
   );
 }

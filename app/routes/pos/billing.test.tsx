@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createRoutesStub } from "react-router";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -8,6 +8,7 @@ import { db } from "~/infrastructure/db/database";
 import { META_KEYS } from "~/infrastructure/db/meta-keys";
 import { metaStore } from "~/infrastructure/db/meta-store";
 import { productRow } from "~/infrastructure/db/test-database";
+import { shiftStore } from "~/infrastructure/db/shift-store";
 import { saveDeviceMeta } from "~/infrastructure/session/device-store";
 
 import BillingRoute, { clientLoader } from "./billing";
@@ -32,6 +33,18 @@ async function seedCatalogue() {
     revokedAt: null,
   });
   await metaStore.set(META_KEYS.billSeq, 742);
+  await shiftStore.save({
+    id: "shift-1",
+    counterId: 2,
+    cashierId: 12,
+    cashierName: "Zainab Khan",
+    openedAt: "2026-09-26T03:00:00Z",
+    openingCash: "5000.00",
+    status: "open",
+    closedAt: null,
+    countedCash: null,
+    syncState: "open_synced",
+  });
   await db.categories.bulkPut([
     { id: 1, name: "Grocery", tint: "grocery" },
     { id: 2, name: "Dairy & eggs", tint: "dairy" },
@@ -180,10 +193,10 @@ describe("Billing desk: scanning", () => {
     await user.type(scanBox, "8961005600055{Enter}");
     await screen.findByLabelText("Quantity of Sugar 1kg");
 
-    expect(
-      JSON.parse(localStorage.getItem("martdesk.currentBill") ?? "{}"),
-    ).toMatchObject({
-      lines: [{ productId: 2, qty: 1 }],
+    await waitFor(() => {
+      expect(
+        JSON.parse(localStorage.getItem("martdesk.currentBill") ?? "{}"),
+      ).toMatchObject({ lines: [{ productId: 2, qty: 1 }] });
     });
   });
 });
@@ -322,6 +335,47 @@ describe("Billing desk: payment", () => {
     expect(screen.getByText("Ready for the next customer")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Clear bill" })).toBeDisabled();
     expect(screen.getByRole("button", { name: /pay & print/i })).toBeDisabled();
+  });
+
+  it("pays by cash and shows the payment and a receipt preview", async () => {
+    const { user, scanBox } = await billOf650();
+
+    await user.type(screen.getByLabelText("Received"), "1000");
+    await user.click(screen.getByRole("button", { name: /pay & print/i }));
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "Payment received",
+    });
+    expect(dialog).toHaveTextContent("Rs 650 · Cash · Change Rs 350");
+    const preview = within(dialog).getByRole("document", {
+      name: "Receipt preview",
+    });
+    expect(preview).toHaveTextContent("Bill 002-000743");
+    expect(preview).toHaveTextContent("2 × Sugar 1kg360");
+    expect(preview).toHaveTextContent("TOTALRs 650");
+    expect(dialog).toHaveTextContent(
+      "Saved on this device. It syncs to the server automatically.",
+    );
+
+    await user.click(within(dialog).getByRole("button", { name: "New sale" }));
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByText("Ready for the next customer")).toBeInTheDocument();
+    expect(scanBox).toHaveFocus();
+  });
+
+  it("pays with F9 only when the bill can be paid", async () => {
+    const { user } = await billOf650();
+
+    await user.keyboard("{F9}");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("radio", { name: "Card" }));
+    await user.keyboard("{F9}");
+
+    expect(
+      await screen.findByRole("dialog", { name: "Payment received" }),
+    ).toHaveTextContent("Rs 650 · Card");
   });
 });
 
