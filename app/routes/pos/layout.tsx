@@ -4,6 +4,7 @@ import { CurrentBillProvider } from "~/components/pos/bill/CurrentBillProvider";
 import { CashierTopBar } from "~/components/pos/CashierTopBar";
 import { useCounterSync } from "~/components/pos/useCounterSync";
 import { useHeartbeat } from "~/components/pos/useHeartbeat";
+import { useUploadWorker } from "~/components/pos/useUploadWorker";
 import { counterClock } from "~/infrastructure/clock";
 import {
   getDeviceCounter,
@@ -18,6 +19,7 @@ import { getSession } from "~/infrastructure/session/session-store";
 import { counterSyncDeps } from "~/infrastructure/sync/counter-sync-deps";
 import { heartbeatDeps } from "~/infrastructure/sync/heartbeat-deps";
 import { loadStoreSettings } from "~/infrastructure/sync/scan-deps";
+import { uploadDeps } from "~/infrastructure/sync/upload-deps";
 
 export async function clientLoader() {
   const redirectTo = resolvePosGuardRedirect(
@@ -45,6 +47,7 @@ export default function PosLayout() {
   const { counter, shift, storeName } = useLoaderData<typeof clientLoader>();
   useCounterSync(counterSyncDeps);
   useHeartbeat(heartbeatDeps);
+  useUploadWorker(uploadDeps);
 
   return (
     <div className="flex min-h-screen flex-col bg-off-white">

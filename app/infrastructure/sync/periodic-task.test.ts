@@ -74,3 +74,39 @@ describe("startPeriodicTask", () => {
     expect(onError).toHaveBeenCalledTimes(2);
   });
 });
+
+describe("delayed triggers", () => {
+  it("waits a random time up to the limit after the event", async () => {
+    const task = vi.fn(() => Promise.resolve());
+
+    const stop = startPeriodicTask(task, {
+      intervalMs: 600_000,
+      delayedTriggers: [{ event: "online", maxDelayMs: 60_000 }],
+      random: () => 0.5,
+    });
+    await vi.advanceTimersByTimeAsync(0);
+    window.dispatchEvent(new Event("online"));
+    await vi.advanceTimersByTimeAsync(29_999);
+    expect(task).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    stop();
+
+    expect(task).toHaveBeenCalledTimes(2);
+  });
+
+  it("drops a waiting run when stopped", async () => {
+    const task = vi.fn(() => Promise.resolve());
+
+    const stop = startPeriodicTask(task, {
+      intervalMs: 600_000,
+      delayedTriggers: [{ event: "online", maxDelayMs: 60_000 }],
+      random: () => 1,
+    });
+    await vi.advanceTimersByTimeAsync(0);
+    window.dispatchEvent(new Event("online"));
+    stop();
+    await vi.advanceTimersByTimeAsync(60_000);
+
+    expect(task).toHaveBeenCalledTimes(1);
+  });
+});
