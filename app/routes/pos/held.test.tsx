@@ -203,3 +203,50 @@ describe("Held bills", () => {
     expect(await screen.findByText(/Billing with/)).toBeInTheDocument();
   });
 });
+
+describe("Deleting a held bill", () => {
+  it("asks first, removes the bill and queues the audit event", async () => {
+    const user = userEvent.setup();
+    await db.held_bills.put(heldBill("h1"));
+    render(<Stub initialEntries={["/pos/held"]} />);
+
+    await user.click(
+      await screen.findByRole("button", { name: "Delete held bill H1" }),
+    );
+    const dialog = screen.getByRole("dialog", { name: "Delete held bill H1?" });
+    expect(dialog).toHaveTextContent("The owner sees it in the activity log.");
+    await user.click(
+      within(dialog).getByRole("button", { name: "Delete bill" }),
+    );
+
+    expect(await screen.findByText("No bills on hold")).toBeInTheDocument();
+    const events = await db.audit_outbox.toArray();
+    expect(events).toHaveLength(1);
+    expect(events[0]?.payload).toMatchObject({
+      action: "held_bill_deleted",
+      entity_type: "held_bill",
+      entity_id: "h1",
+      detail: {
+        title: "Customer in blue kurta",
+        total: "3270.00",
+        item_count: 7,
+      },
+    });
+  });
+
+  it("keeps the bill when the cashier cancels", async () => {
+    const user = userEvent.setup();
+    await db.held_bills.put(heldBill("h1"));
+    render(<Stub initialEntries={["/pos/held"]} />);
+
+    await user.click(
+      await screen.findByRole("button", { name: "Delete held bill H1" }),
+    );
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(
+      screen.getByRole("article", { name: "H1 Customer in blue kurta" }),
+    ).toBeInTheDocument();
+    expect(await db.audit_outbox.count()).toBe(0);
+  });
+});

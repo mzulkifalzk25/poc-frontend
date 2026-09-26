@@ -3,7 +3,13 @@ import { describe, expect, it, vi } from "vitest";
 import type { DraftLine } from "~/domain/bill";
 import type { HeldBillRow } from "~/infrastructure/db/rows";
 
-import { holdBill, recallBill, type HeldBillDeps } from "./held-bills";
+import {
+  deleteHeldBill,
+  holdBill,
+  recallBill,
+  type DeleteHeldDeps,
+  type HeldBillDeps,
+} from "./held-bills";
 
 const lines: DraftLine[] = [
   {
@@ -107,5 +113,59 @@ describe("recallBill", () => {
     await expect(recallBill(deps, "nope", [])).resolves.toEqual({
       status: "missing",
     });
+  });
+});
+
+describe("deleteHeldBill", () => {
+  it("removes the held bill and queues a held_bill_deleted event together", async () => {
+    const { deps: store } = fakeDeps();
+    await holdBill(store, input);
+    const removeWithEvent = vi.fn(() => Promise.resolve());
+    const onQueued = vi.fn();
+    const deps: DeleteHeldDeps = {
+      get: store.get,
+      removeWithEvent,
+      onQueued,
+      now: () => new Date("2026-09-26T13:00:00.000Z"),
+      newId: () => "event-1",
+    };
+
+    await expect(deleteHeldBill(deps, "held-1")).resolves.toBe(true);
+
+    expect(removeWithEvent).toHaveBeenCalledWith(
+      "held-1",
+      {
+        id: "event-1",
+        action: "held_bill_deleted",
+        occurred_at: "2026-09-26T13:00:00.000Z",
+        entity_type: "held_bill",
+        entity_id: "held-1",
+        detail: {
+          title: "Went to fetch her wallet",
+          total: "730.00",
+          item_count: 3,
+        },
+      },
+      Date.parse("2026-09-26T13:00:00.000Z"),
+    );
+    expect(onQueued).toHaveBeenCalledOnce();
+  });
+
+  it("does nothing for a held bill that is gone", async () => {
+    const removeWithEvent = vi.fn(() => Promise.resolve());
+
+    await expect(
+      deleteHeldBill(
+        {
+          get: () => Promise.resolve(null),
+          removeWithEvent,
+          onQueued: vi.fn(),
+          now: () => new Date(),
+          newId: () => "e",
+        },
+        "nope",
+      ),
+    ).resolves.toBe(false);
+    expect(removeWithEvent).not.toHaveBeenCalled();
   });
 });

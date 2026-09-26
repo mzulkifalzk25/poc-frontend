@@ -309,6 +309,11 @@ export const en = {
     holdPlaceholder: "e.g. Customer in blue kurta",
     holdConfirm: "Hold bill",
     heldNotice: (title: string) => `Bill held: ${title}`,
+    delete: (tag: string) => `Delete held bill ${tag}`,
+    deleteTitle: (tag: string) => `Delete held bill ${tag}?`,
+    deleteBody:
+      "It is removed from this counter. The owner sees it in the activity log.",
+    deleteConfirm: "Delete bill",
   },
   posNav: {
     returns: "Returns",

@@ -3,19 +3,41 @@ import { useLoaderData, useNavigate, useRevalidator } from "react-router";
 
 import { useCurrentBill } from "~/components/pos/bill/CurrentBillProvider";
 import { HeldBillCard } from "~/components/pos/held/HeldBillCard";
+import { ConfirmDialog } from "~/components/ui/ConfirmDialog";
 import { EmptyState } from "~/components/ui/StateBlocks";
 import { t } from "~/i18n/t";
 import { heldBillStore } from "~/infrastructure/db/held-bill-store";
 import { shiftStore } from "~/infrastructure/db/shift-store";
 import { getDeviceCounter } from "~/infrastructure/session/device-store";
 import { STORE_TIME_ZONE } from "~/infrastructure/store-time-zone";
-import { heldBillDeps } from "~/infrastructure/sync/held-bill-deps";
-import { recallBill } from "~/use_cases/held-bills";
+import {
+  deleteHeldDeps,
+  heldBillDeps,
+} from "~/infrastructure/sync/held-bill-deps";
+import { deleteHeldBill, recallBill } from "~/use_cases/held-bills";
 
 export async function clientLoader() {
   const counter = await getDeviceCounter();
   const shift = counter ? await shiftStore.current(counter.id) : null;
   return { held: shift ? await heldBillStore.listForShift(shift.id) : [] };
+}
+
+function TrashIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" />
+    </svg>
+  );
 }
 
 function CloseIcon() {
@@ -41,6 +63,10 @@ export default function HeldRoute() {
   const navigate = useNavigate();
   const revalidator = useRevalidator();
   const [error, setError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<{ id: string; tag: string } | null>(
+    null,
+  );
+  const [pending, setPending] = useState(false);
   const strings = t().held;
   const close = () => void navigate("/pos");
 
@@ -52,6 +78,17 @@ export default function HeldRoute() {
       return;
     }
     setError(result.status === "busy" ? strings.busy : strings.missing);
+    void revalidator.revalidate();
+  }
+
+  async function confirmDelete() {
+    if (!deleting) {
+      return;
+    }
+    setPending(true);
+    await deleteHeldBill(deleteHeldDeps, deleting.id);
+    setPending(false);
+    setDeleting(null);
     void revalidator.revalidate();
   }
 
@@ -107,6 +144,18 @@ export default function HeldRoute() {
               now={new Date()}
               timeZone={STORE_TIME_ZONE}
               onRecall={() => void recall(bill.id)}
+              deleteButton={
+                <button
+                  type="button"
+                  aria-label={strings.delete(strings.tag(index))}
+                  onClick={() => {
+                    setDeleting({ id: bill.id, tag: strings.tag(index) });
+                  }}
+                  className="flex h-12 w-12 items-center justify-center rounded-lg border border-border bg-white text-error-text transition hover:bg-error-bg focus-visible:ring-2 focus-visible:ring-blue focus-visible:outline-none active:brightness-95"
+                >
+                  <TrashIcon />
+                </button>
+              }
             />
           ))
         )}
@@ -114,6 +163,19 @@ export default function HeldRoute() {
           {strings.footer}
         </p>
       </section>
+      {deleting && (
+        <ConfirmDialog
+          title={strings.deleteTitle(deleting.tag)}
+          confirmLabel={strings.deleteConfirm}
+          pending={pending}
+          onConfirm={() => void confirmDelete()}
+          onCancel={() => {
+            setDeleting(null);
+          }}
+        >
+          <p>{strings.deleteBody}</p>
+        </ConfirmDialog>
+      )}
     </div>
   );
 }
