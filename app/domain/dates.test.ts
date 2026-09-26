@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { formatClockTime, formatDayMonth, formatDayMonthYear } from "./dates";
+import {
+  formatClockTime,
+  formatDayMonth,
+  formatDayMonthYear,
+  formatWeekdayDayMonth,
+} from "./dates";
 
 describe("formatDayMonth", () => {
   it("shows the day and short month", () => {
@@ -30,6 +35,14 @@ describe("receipt date and time", () => {
     );
     expect(formatClockTime("2026-09-19T19:05:00Z", "Asia/Karachi")).toBe(
       "00:05",
+    );
+  });
+});
+
+describe("formatWeekdayDayMonth", () => {
+  it("names the local day", () => {
+    expect(formatWeekdayDayMonth("2026-09-19T09:00:00Z", "Asia/Karachi")).toBe(
+      "Saturday, 19 September",
     );
   });
 });

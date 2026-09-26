@@ -49,3 +49,16 @@ export function formatClockTime(isoUtc: string, timeZone: string): string {
   });
   return `${part("hour")}:${part("minute")}`;
 }
+
+// "Saturday, 19 September" in the store's time zone.
+export function formatWeekdayDayMonth(
+  isoUtc: string,
+  timeZone: string,
+): string {
+  const part = parts(isoUtc, timeZone, {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+  return `${part("weekday")}, ${part("day")} ${part("month")}`;
+}

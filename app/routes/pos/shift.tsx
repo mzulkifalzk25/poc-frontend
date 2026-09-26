@@ -1,7 +1,106 @@
-import { PlaceholderPage } from "~/components/ui/PlaceholderPage";
+import { useState } from "react";
+import { Link, useLoaderData, useRevalidator } from "react-router";
 
-export const handle = { title: "End of shift" };
+import { DrawerCountCard } from "~/components/pos/shift/DrawerCountCard";
+import { ShiftSummaryCard } from "~/components/pos/shift/ShiftSummaryCard";
+import { UnsyncedBanner } from "~/components/pos/shift/UnsyncedBanner";
+import { formatClockTime, formatWeekdayDayMonth } from "~/domain/dates";
+import { toPaisa } from "~/domain/paisa";
+import { expectedCash, shiftTotals } from "~/domain/shift-totals";
+import { t } from "~/i18n/t";
+import { recentBillStore } from "~/infrastructure/db/recent-bill-store";
+import { shiftStore } from "~/infrastructure/db/shift-store";
+import { getDeviceCounter } from "~/infrastructure/session/device-store";
+import { STORE_TIME_ZONE } from "~/infrastructure/store-time-zone";
+import { countUnsyncedSales } from "~/infrastructure/sync/heartbeat-deps";
+import { uploadDeps } from "~/infrastructure/sync/upload-deps";
+import { uploadOutbox } from "~/use_cases/upload-outbox";
+
+export async function clientLoader() {
+  const counter = await getDeviceCounter();
+  const shift = counter ? await shiftStore.current(counter.id) : null;
+  const bills = shift ? await recentBillStore.forShift(shift.id) : [];
+  // Refunds join this list with Returns (Step F6).
+  const totals = shiftTotals(
+    bills.map((row) => ({
+      method: row.bill.payment.method,
+      total: row.bill.totals.total,
+    })),
+    [],
+  );
+  const openingCash = shift ? toPaisa(shift.openingCash) : 0;
+  return {
+    shift,
+    totals,
+    openingCash,
+    expected: expectedCash(openingCash, totals),
+    unsynced: await countUnsyncedSales(),
+  };
+}
 
 export default function ShiftRoute() {
-  return <PlaceholderPage title="End of shift" />;
+  const data = useLoaderData<typeof clientLoader>();
+  const revalidator = useRevalidator();
+  const strings = t().endShift;
+  const [counted, setCounted] = useState("");
+  const [syncing, setSyncing] = useState(false);
+
+  async function syncNow() {
+    setSyncing(true);
+    await uploadOutbox(uploadDeps).catch(() => 0);
+    setSyncing(false);
+    void revalidator.revalidate();
+  }
+
+  return (
+    <div className="flex flex-col gap-5 px-[120px] py-8">
+      <header className="flex items-end justify-between">
+        <div className="flex flex-col gap-1">
+          <h1 className="font-heading text-[34px] font-bold tracking-[-0.02em]">
+            {strings.title}
+          </h1>
+          {data.shift && (
+            <p className="text-[15px] text-text-secondary">
+              {strings.subtitle(
+                formatWeekdayDayMonth(data.shift.openedAt, STORE_TIME_ZONE),
+                formatClockTime(data.shift.openedAt, STORE_TIME_ZONE),
+              )}
+            </p>
+          )}
+        </div>
+        <Link
+          to="/pos"
+          className="flex h-12 items-center rounded-lg border border-border-strong bg-white px-5 text-[15px] font-semibold transition hover:bg-off-white focus-visible:ring-2 focus-visible:ring-blue focus-visible:outline-none active:bg-border"
+        >
+          {strings.back}
+        </Link>
+      </header>
+      {data.unsynced > 0 && (
+        <UnsyncedBanner
+          count={data.unsynced}
+          syncing={syncing}
+          onSyncNow={() => void syncNow()}
+        />
+      )}
+      <div className="grid grid-cols-[1.2fr_1fr] gap-5">
+        <ShiftSummaryCard totals={data.totals} />
+        <DrawerCountCard
+          openingCash={data.openingCash}
+          totals={data.totals}
+          expected={data.expected}
+          counted={counted}
+          onCounted={setCounted}
+          footer={
+            <button
+              type="button"
+              disabled
+              className="flex h-16 w-full items-center justify-center rounded-lg bg-blue text-[19px] font-bold text-white transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-blue focus-visible:ring-offset-2 focus-visible:outline-none active:brightness-90 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {strings.close}
+            </button>
+          }
+        />
+      </div>
+    </div>
+  );
 }

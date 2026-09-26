@@ -315,6 +315,38 @@ export const en = {
       "It is removed from this counter. The owner sees it in the activity log.",
     deleteConfirm: "Delete bill",
   },
+  endShift: {
+    title: "End of shift",
+    subtitle: (day: string, time: string) => `${day} · Shift started ${time}`,
+    back: "Back to counter",
+    unsynced: (total: number) =>
+      total === 1
+        ? "1 sale is still waiting to sync."
+        : `${count(total)} sales are still waiting to sync.`,
+    unsyncedHint:
+      "Connect to the internet before you leave so the owner sees them.",
+    syncNow: "Sync now",
+    syncing: "Syncing…",
+    yourShift: "Your shift",
+    bills: "Bills",
+    totalSales: "Total sales",
+    cash: "Cash",
+    card: "Card",
+    wallet: "Wallet",
+    refunds: (total: number) =>
+      `Refunds (${count(total)} ${total === 1 ? "bill" : "bills"})`,
+    countDrawer: "Count the drawer",
+    openingCash: "Opening cash",
+    cashSales: "Cash sales",
+    cashRefunds: (total: number) => `Cash refunds (${count(total)})`,
+    expected: "Expected in drawer",
+    counted: "Cash you counted",
+    difference: "Difference",
+    balanced: (amount: string) => `${amount} · Balanced`,
+    over: (amount: string) => `${amount} over`,
+    short: (amount: string) => `${amount} short`,
+    close: "Close shift and sign out",
+  },
   posNav: {
     returns: "Returns",
     held: "Held bills",
