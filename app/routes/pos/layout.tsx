@@ -1,4 +1,4 @@
-import { Outlet, redirect, useLoaderData, useMatches } from "react-router";
+import { Outlet, redirect, useLoaderData } from "react-router";
 
 import { CurrentBillProvider } from "~/components/pos/bill/CurrentBillProvider";
 import { CashierTopBar } from "~/components/pos/CashierTopBar";
@@ -17,6 +17,7 @@ import {
 import { getSession } from "~/infrastructure/session/session-store";
 import { counterSyncDeps } from "~/infrastructure/sync/counter-sync-deps";
 import { heartbeatDeps } from "~/infrastructure/sync/heartbeat-deps";
+import { loadStoreSettings } from "~/infrastructure/sync/scan-deps";
 
 export async function clientLoader() {
   const redirectTo = resolvePosGuardRedirect(
@@ -36,25 +37,21 @@ export async function clientLoader() {
     throw redirect(shiftRedirect);
   }
   await counterClock.load();
-  return { counter, shift };
-}
-
-interface RouteHandle {
-  title?: string;
+  const settings = await loadStoreSettings();
+  return { counter, shift, storeName: settings?.storeName ?? "" };
 }
 
 export default function PosLayout() {
-  const { counter } = useLoaderData<typeof clientLoader>();
-  const matches = useMatches();
-  const handle = matches.at(-1)?.handle as RouteHandle | undefined;
+  const { counter, shift, storeName } = useLoaderData<typeof clientLoader>();
   useCounterSync(counterSyncDeps);
   useHeartbeat(heartbeatDeps);
 
   return (
     <div className="flex min-h-screen flex-col bg-off-white">
       <CashierTopBar
-        title={handle?.title ?? "MartDesk"}
+        storeName={storeName}
         counterName={counter?.name ?? null}
+        cashierName={shift?.cashierName ?? null}
       />
       <main className="flex-1">
         <CurrentBillProvider>

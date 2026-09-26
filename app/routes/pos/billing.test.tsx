@@ -8,12 +8,14 @@ import { db } from "~/infrastructure/db/database";
 import { META_KEYS } from "~/infrastructure/db/meta-keys";
 import { metaStore } from "~/infrastructure/db/meta-store";
 import { productRow } from "~/infrastructure/db/test-database";
+import { saveDeviceMeta } from "~/infrastructure/session/device-store";
 
-import BillingRoute from "./billing";
+import BillingRoute, { clientLoader } from "./billing";
 
 const Stub = createRoutesStub([
   {
     path: "/pos",
+    loader: clientLoader,
     Component: () => (
       <CurrentBillProvider>
         <BillingRoute />
@@ -23,6 +25,19 @@ const Stub = createRoutesStub([
 ]);
 
 async function seedCatalogue() {
+  await saveDeviceMeta({
+    token: "device-token",
+    counter: { id: 2, name: "Counter 2", code: "002" },
+    activatedAt: "2026-09-26T03:00:00Z",
+    revokedAt: null,
+  });
+  await metaStore.set(META_KEYS.billSeq, 742);
+  await db.categories.bulkPut([
+    { id: 1, name: "Grocery", tint: "grocery" },
+    { id: 2, name: "Dairy & eggs", tint: "dairy" },
+    { id: 7, name: "Bakery", tint: "bakery" },
+    { id: 9, name: "Household", tint: "household" },
+  ]);
   await db.products.bulkPut([
     productRow(1, {
       name: "Fresh Milk 1L",
@@ -87,7 +102,7 @@ describe("Billing desk: scanning", () => {
     expect(
       within(rows()[0] as HTMLElement).getByText("360"),
     ).toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent("Sugar 1kg · Rs 180");
+    expect(screen.getByText("Sugar 1kg · Rs 180")).toBeInTheDocument();
   });
 
   it("types a quantity and applies it on Enter", async () => {
@@ -135,9 +150,9 @@ describe("Billing desk: scanning", () => {
 
     await user.type(scanBox, "8961099900123{Enter}");
 
-    expect(await screen.findByRole("status")).toHaveTextContent(
-      "Barcode 8961099900123 is not in the catalogue.",
-    );
+    expect(
+      await screen.findByText("Barcode 8961099900123 is not in the catalogue."),
+    ).toBeInTheDocument();
     expect(rows()).toHaveLength(0);
   });
 
@@ -148,9 +163,9 @@ describe("Billing desk: scanning", () => {
 
     await user.type(scanBox, "8961005600055{Enter}");
 
-    expect(await screen.findByRole("status")).toHaveTextContent(
-      "Sugar 1kg is out of stock.",
-    );
+    expect(
+      await screen.findByText("Sugar 1kg is out of stock."),
+    ).toBeInTheDocument();
   });
 
   it("keeps the bill after a reload", async () => {
@@ -163,5 +178,67 @@ describe("Billing desk: scanning", () => {
     ).toMatchObject({
       lines: [{ productId: 2, qty: 1 }],
     });
+  });
+});
+
+describe("Billing desk: current bill and quick items", () => {
+  it("shows the next bill number, the item count and the total to pay", async () => {
+    const { user, scanBox } = await openDesk();
+    expect(screen.getByText("002-000743")).toBeInTheDocument();
+
+    await user.type(scanBox, "8961005600055{Enter}");
+    await user.type(scanBox, "8961005600055{Enter}");
+    await user.type(scanBox, "8961004500044{Enter}");
+    await screen.findByLabelText("Quantity of Fresh Milk 1L");
+
+    const panel = screen.getByRole("complementary", { name: "Current bill" });
+    expect(within(panel).getByText("3")).toBeInTheDocument();
+    expect(
+      within(panel).getByRole("status", { name: "Total to pay" }),
+    ).toHaveTextContent("Rs 650");
+  });
+
+  it("adds tax on top when the owner set a rate", async () => {
+    await metaStore.set(META_KEYS.settings, {
+      taxRate: "10.00",
+      pricesIncludeTax: false,
+    });
+    const { user, scanBox } = await openDesk();
+
+    await user.type(scanBox, "8961007800077{Enter}");
+    await screen.findByLabelText("Quantity of Bread Loaf");
+
+    expect(
+      screen.getByRole("status", { name: "Total to pay" }),
+    ).toHaveTextContent("Rs 165");
+  });
+
+  it("shows the first categories as quick item tabs and adds a tile", async () => {
+    const { user } = await openDesk();
+
+    const tabs = screen.getAllByRole("tab");
+    expect(tabs.map((tab) => tab.textContent)).toEqual([
+      "Grocery",
+      "Dairy & eggs",
+      "Bakery",
+    ]);
+    await user.click(screen.getByRole("tab", { name: "Bakery" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Add Bread Loaf, Rs 150" }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Add Bread Loaf, Rs 150" }),
+    );
+
+    expect(screen.getByLabelText("Quantity of Bread Loaf")).toHaveValue("2");
+  });
+
+  it("says when a quick item tab has no products", async () => {
+    await db.categories.put({ id: 0, name: "Frozen", tint: "dairy" });
+    await openDesk();
+
+    expect(
+      await screen.findByText("No products in this category yet."),
+    ).toBeInTheDocument();
   });
 });

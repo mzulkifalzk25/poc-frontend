@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { formatBillNumber, toApiBillNumber } from "./bill-number";
+import {
+  formatBillNumber,
+  nextBillNumber,
+  toApiBillNumber,
+} from "./bill-number";
 
 describe("formatBillNumber", () => {
   it("splits the counter code from the sequence", () => {
@@ -27,5 +31,18 @@ describe("toApiBillNumber", () => {
     expect(() => toApiBillNumber("#037743")).toThrow(
       "Invalid bill number: #037743",
     );
+  });
+});
+
+describe("nextBillNumber", () => {
+  it("continues this counter's sequence", () => {
+    expect(nextBillNumber("002", 742)).toBe("002000743");
+    expect(nextBillNumber("003", 0)).toBe("003000001");
+  });
+
+  it("rejects a bad counter code or a full sequence", () => {
+    expect(() => nextBillNumber("2", 1)).toThrow();
+    expect(() => nextBillNumber("002", 999_999)).toThrow();
+    expect(() => nextBillNumber("002", -1)).toThrow();
   });
 });

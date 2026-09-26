@@ -14,3 +14,24 @@ export function toApiBillNumber(displayBillNo: string): string {
   }
   return stripped;
 }
+
+const MAX_SEQUENCE = 999_999;
+
+// Counter code (3 digits) + this counter's own sequence (6 digits), e.g. "002000744".
+export function nextBillNumber(
+  counterCode: string,
+  lastSequence: number,
+): string {
+  if (!/^\d{3}$/.test(counterCode)) {
+    throw new Error(`Invalid counter code: ${counterCode}`);
+  }
+  const next = lastSequence + 1;
+  if (
+    !Number.isInteger(lastSequence) ||
+    lastSequence < 0 ||
+    next > MAX_SEQUENCE
+  ) {
+    throw new Error(`Bill sequence out of range: ${String(lastSequence)}`);
+  }
+  return `${counterCode}${String(next).padStart(6, "0")}`;
+}
