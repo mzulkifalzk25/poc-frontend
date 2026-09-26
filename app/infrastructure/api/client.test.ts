@@ -106,7 +106,7 @@ describe("apiClient", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it("sends the device token for device-scoped requests", async () => {
+  it("sends the device token with the Device scheme (contract v4.1)", async () => {
     await saveDeviceMeta({
       token: "device-token-1",
       counter: { id: 2, name: "Counter 2", code: "002" },
@@ -121,7 +121,7 @@ describe("apiClient", () => {
       "https://api.test/pos/roster",
       expect.objectContaining({
         headers: expect.objectContaining({
-          Authorization: "Bearer device-token-1",
+          Authorization: "Device device-token-1",
         }) as Record<string, string>,
       }),
     );

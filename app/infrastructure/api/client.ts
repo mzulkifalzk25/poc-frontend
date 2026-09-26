@@ -30,14 +30,19 @@ interface RequestOptions {
   tokenSource?: TokenSource;
 }
 
-async function resolveToken(tokenSource: TokenSource): Promise<string | null> {
+// Users send `Bearer <jwt>`; an activated counter PC sends `Device <token>`.
+async function resolveAuthorization(
+  tokenSource: TokenSource,
+): Promise<string | null> {
   if (tokenSource === "none") {
     return null;
   }
   if (tokenSource === "device") {
-    return getDeviceToken();
+    const token = await getDeviceToken();
+    return token ? `Device ${token}` : null;
   }
-  return tokenProvider ? tokenProvider.getAccessToken() : null;
+  const token = tokenProvider ? tokenProvider.getAccessToken() : null;
+  return token ? `Bearer ${token}` : null;
 }
 
 async function sendRequest(
@@ -50,9 +55,9 @@ async function sendRequest(
   if (body !== undefined) {
     headers["Content-Type"] = "application/json";
   }
-  const token = await resolveToken(tokenSource);
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
+  const authorization = await resolveAuthorization(tokenSource);
+  if (authorization) {
+    headers.Authorization = authorization;
   }
   return fetch(`${import.meta.env.VITE_API_BASE_URL}${path}`, {
     method,
