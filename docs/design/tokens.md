@@ -22,6 +22,7 @@ Bricolage Grotesque (headings), DM Sans (body), JetBrains Mono (prices, bill num
 | `border-strong`               | `#C5CFDB`             | Secondary button and form field borders in Admin                 |
 | `text`                        | `#12263F`             | Text primary                                                     |
 | `text-secondary`              | `#61738A`             | Text secondary                                                   |
+| `ink-soft`                    | `#34445A`             | Barcodes and icon buttons in Admin tables and cards              |
 | `success`                     | `#20A86B`             | Online, success, in stock                                        |
 | `success-text` / `success-bg` | `#167A4E` / `#E1F5EC` | Success text on a pale tint                                      |
 | `error`                       | `#D94A4A`             | Errors, destructive buttons                                      |
@@ -30,7 +31,7 @@ Bricolage Grotesque (headings), DM Sans (body), JetBrains Mono (prices, bill num
 
 ## Category tints
 
-Grocery `#E3F3EA` (ink `#0A5C3C`), Dairy `#E4EEFB`, Beverages `#FCEBDD`, Snacks `#FBE6EE`, Personal care `#EDE6FA`, Household `#E2F1F3`, Bakery `#F6EBC9`. Only Grocery's ink is specified; other categories use the shared text tokens at the point of use.
+Grocery `#E3F3EA` (ink `#0A5C3C`), Dairy `#E4EEFB` (ink `#1E4E9C`), Beverages `#FCEBDD` (ink `#9A4A12`), Snacks `#FBE6EE` (ink `#A3204F`), Personal care `#EDE6FA` (ink `#5B33A8`), Household `#E2F1F3` (ink `#146673`), Bakery `#F6EBC9` (ink `#7A5A05`). The spec names only Grocery's ink; the other inks come from the Products and Categories boards. The API sends the tint as a key: `grocery`, `dairy`, `beverages`, `snacks`, `personal_care`, `household`, `bakery`.
 
 ## Money trail series
 
@@ -70,6 +71,7 @@ Hover darkens 8% (`hover:brightness-95` on the shared UI primitives), gold uses 
   --color-border-strong: #c5cfdb;
   --color-text: #12263f;
   --color-text-secondary: #61738a;
+  --color-ink-soft: #34445a;
   --color-success: #20a86b;
   --color-success-text: #167a4e;
   --color-success-bg: #e1f5ec;
@@ -82,11 +84,17 @@ Hover darkens 8% (`hover:brightness-95` on the shared UI primitives), gold uses 
   --color-category-grocery-bg: #e3f3ea;
   --color-category-grocery-ink: #0a5c3c;
   --color-category-dairy-bg: #e4eefb;
+  --color-category-dairy-ink: #1e4e9c;
   --color-category-beverages-bg: #fcebdd;
+  --color-category-beverages-ink: #9a4a12;
   --color-category-snacks-bg: #fbe6ee;
+  --color-category-snacks-ink: #a3204f;
   --color-category-personal-care-bg: #ede6fa;
+  --color-category-personal-care-ink: #5b33a8;
   --color-category-household-bg: #e2f1f3;
+  --color-category-household-ink: #146673;
   --color-category-bakery-bg: #f6ebc9;
+  --color-category-bakery-ink: #7a5a05;
 
   --color-money-card: #6b9ac4;
 

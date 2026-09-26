@@ -16,6 +16,9 @@ export const en = {
     online: "Online",
     offline: "Offline",
     signOut: "Sign out",
+    close: "Close",
+    cancel: "Cancel",
+    saving: "Saving…",
   },
   brand: {
     tagline: "POS & Store Management",
@@ -160,6 +163,43 @@ export const en = {
         `Showing ${count(from)}–${count(to)} of ${count(total)}`,
       previous: "Previous",
       next: "Next",
+    },
+    errors: {
+      offline: "You are offline. Check your connection and try again.",
+      failed: "Could not save. Try again.",
+    },
+  },
+  categories: {
+    title: "Categories",
+    subtitle: (categories: number, products: number) =>
+      `${count(categories)} categories · ${count(products)} products`,
+    add: "Add category",
+    newCard: "New category",
+    products: "products",
+    viewProducts: "View products",
+    edit: (name: string) => `Edit ${name}`,
+    note: "A category that still has products can't be deleted. Move its products to another category first, and MartDesk will offer to do it for you.",
+    empty: {
+      title: "No categories yet",
+      hint: "Add a category to start sorting your products.",
+    },
+    saved: (name: string) => `${name} saved`,
+    form: {
+      addTitle: "Add category",
+      editTitle: "Edit category",
+      name: "Category name",
+      namePlaceholder: "e.g. Frozen food",
+      tint: "Colour",
+      tintNames: {
+        grocery: "Green",
+        dairy: "Blue",
+        beverages: "Orange",
+        snacks: "Pink",
+        personal_care: "Purple",
+        household: "Teal",
+        bakery: "Yellow",
+      },
+      save: "Save category",
     },
   },
 } as const;

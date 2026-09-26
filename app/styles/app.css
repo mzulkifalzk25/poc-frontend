@@ -17,6 +17,7 @@
   --color-border-strong: #c5cfdb;
   --color-text: #12263f;
   --color-text-secondary: #61738a;
+  --color-ink-soft: #34445a;
   --color-success: #20a86b;
   --color-success-text: #167a4e;
   --color-success-bg: #e1f5ec;
@@ -29,11 +30,17 @@
   --color-category-grocery-bg: #e3f3ea;
   --color-category-grocery-ink: #0a5c3c;
   --color-category-dairy-bg: #e4eefb;
+  --color-category-dairy-ink: #1e4e9c;
   --color-category-beverages-bg: #fcebdd;
+  --color-category-beverages-ink: #9a4a12;
   --color-category-snacks-bg: #fbe6ee;
+  --color-category-snacks-ink: #a3204f;
   --color-category-personal-care-bg: #ede6fa;
+  --color-category-personal-care-ink: #5b33a8;
   --color-category-household-bg: #e2f1f3;
+  --color-category-household-ink: #146673;
   --color-category-bakery-bg: #f6ebc9;
+  --color-category-bakery-ink: #7a5a05;
 
   --color-money-card: #6b9ac4;
 
