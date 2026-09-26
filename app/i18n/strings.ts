@@ -269,6 +269,40 @@ export const en = {
       catalogueHint: "Scan a barcode to add your first product.",
     },
   },
+  productForm: {
+    name: "Product name",
+    category: "Category",
+    chooseCategory: "Choose a category",
+    unit: "Unit",
+    price: "Selling price (Rs)",
+    cost: "Cost price (Rs)",
+    fieldErrors: {
+      required: "Fill this in.",
+      invalid_amount: "Enter a number, 0 or more.",
+    },
+  },
+  productEdit: {
+    title: "Edit product",
+    notFound: {
+      title: "Product not found",
+      hint: "It may have been removed. Close this panel and refresh the list.",
+    },
+    profit: "Profit per unit",
+    profitValue: (money: string, margin: number | null) =>
+      margin === null ? money : `${money} · ${String(margin)}% margin`,
+    noProfit: "—",
+    stock: "Stock on hand",
+    adjust: "Adjust",
+    lowStock: "Low-stock alert at",
+    history: "Price history",
+    historyEmpty: "No price changes yet.",
+    historyFailed: "Could not load the price history.",
+    historyRow: (date: string, who: string) => `${date} · ${who}`,
+    historyChange: (oldPrice: string, newPrice: string) =>
+      `${oldPrice} to ${newPrice}`,
+    save: "Save changes",
+    saved: (name: string) => `${name} saved`,
+  },
 } as const;
 
 export type Strings = typeof en;

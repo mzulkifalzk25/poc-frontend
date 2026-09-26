@@ -23,9 +23,10 @@ export default [
   layout("routes/admin/layout.tsx", [
     ...prefix("admin", [
       index("routes/admin/dashboard.tsx"),
-      route("products", "routes/admin/products.tsx"),
-      route("products/scan", "routes/admin/scan-add.tsx"),
-      route("products/:id", "routes/admin/product-edit.tsx"),
+      route("products", "routes/admin/products.tsx", [
+        route("scan", "routes/admin/scan-add.tsx"),
+        route(":id", "routes/admin/product-edit.tsx"),
+      ]),
       route("categories", "routes/admin/categories.tsx"),
       route("inventory", "routes/admin/inventory.tsx"),
       route("inventory/adjust", "routes/admin/inventory-adjust.tsx"),

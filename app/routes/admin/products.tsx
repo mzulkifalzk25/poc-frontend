@@ -1,10 +1,11 @@
 import { useCallback, useMemo } from "react";
-import { useSearchParams } from "react-router";
+import { Outlet, useSearchParams } from "react-router";
 
 import { PageHeader } from "~/components/admin/PageHeader";
 import { Paging } from "~/components/admin/Paging";
 import { ProductFilters } from "~/components/admin/products/ProductFilters";
 import { ProductTable } from "~/components/admin/products/ProductTable";
+import type { ProductsOutletContext } from "~/components/admin/products/productsOutlet";
 import {
   paramsFromQuery,
   queryFromParams,
@@ -167,6 +168,11 @@ export default function ProductsRoute() {
         onPage={(page) => {
           update({ page });
         }}
+      />
+      <Outlet
+        context={
+          { reloadList: products.reload } satisfies ProductsOutletContext
+        }
       />
     </div>
   );
