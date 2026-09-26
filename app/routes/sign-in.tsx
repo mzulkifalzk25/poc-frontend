@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useLoaderData, useNavigate } from "react-router";
 
 import { AdminSignInForm } from "~/components/auth/AdminSignInForm";
@@ -7,6 +7,7 @@ import { RoleCard } from "~/components/auth/RoleCard";
 import { SignInBrandPanel } from "~/components/auth/SignInBrandPanel";
 import { useCountdown } from "~/components/auth/useCountdown";
 import { Logo } from "~/components/ui/Logo";
+import { useOnlineStatus } from "~/components/ui/useOnlineStatus";
 import { t } from "~/i18n/t";
 import { cashierAuthRepository } from "~/infrastructure/api/cashier-auth-repository";
 import { ownerAuthRepository } from "~/infrastructure/api/owner-auth-repository";
@@ -51,24 +52,7 @@ const adminIcon = (
 );
 
 function OnlineIndicator() {
-  const [online, setOnline] = useState(
-    typeof navigator === "undefined" ? true : navigator.onLine,
-  );
-
-  useEffect(() => {
-    function goOnline() {
-      setOnline(true);
-    }
-    function goOffline() {
-      setOnline(false);
-    }
-    window.addEventListener("online", goOnline);
-    window.addEventListener("offline", goOffline);
-    return () => {
-      window.removeEventListener("online", goOnline);
-      window.removeEventListener("offline", goOffline);
-    };
-  }, []);
+  const online = useOnlineStatus();
 
   return (
     <span

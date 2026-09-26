@@ -25,7 +25,7 @@ export function resolvePosGuardRedirect(
 export function resolveActivateGuardRedirect(
   deviceActivated: boolean,
 ): string | null {
-  return deviceActivated ? "/pos/sign-in" : null;
+  return deviceActivated ? "/" : null;
 }
 
 export function resolvePosSignInGuardRedirect(

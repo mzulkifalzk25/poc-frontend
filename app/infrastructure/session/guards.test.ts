@@ -64,7 +64,7 @@ describe("resolveActivateGuardRedirect", () => {
   });
 
   it("sends an already-activated device to sign in", () => {
-    expect(resolveActivateGuardRedirect(true)).toBe("/pos/sign-in");
+    expect(resolveActivateGuardRedirect(true)).toBe("/");
   });
 });
 

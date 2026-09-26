@@ -7,6 +7,10 @@ function waitDuration(totalSeconds: number): string {
   return seconds === "0" ? `${minutes} min` : `${minutes} min ${seconds} s`;
 }
 
+function count(value: number): string {
+  return value.toLocaleString("en-US");
+}
+
 export const en = {
   common: {
     online: "Online",
@@ -75,6 +79,57 @@ export const en = {
       throttledWait: (seconds: number) =>
         `Wait ${waitDuration(seconds)}, then try again.`,
     },
+  },
+  activate: {
+    portalTag: "Cashier portal",
+    title: "Activate this counter",
+    hint: "Enter the code the owner gave you. You only do this once on this PC.",
+    codeLabel: "Activation code",
+    codeNote:
+      "A code works once and expires after 15 minutes. If it does not work, ask the owner for a new one.",
+    submit: "Activate",
+    submitting: "Activating…",
+    errors: {
+      code_invalid: "This code is not valid. Check it and try again.",
+      code_expired: "This code has expired. Ask the owner for a new one.",
+      code_used: "This code was already used. Ask the owner for a new one.",
+      offline:
+        "You are offline. Activating a counter needs an internet connection.",
+      rateLimitedWait: (seconds: number) =>
+        `Too many tries. Wait ${waitDuration(seconds)}, then try again.`,
+    },
+    success: {
+      title: (counterName: string) => `This PC is ${counterName}`,
+      codeLinePrefix: "Counter code",
+      codeLineSuffix: (code: string) =>
+        `. Bills from here will start with ${code}.`,
+      catalogue: "Catalogue",
+      catalogueValue: "Downloads before the first shift",
+      cashiers: "Cashiers",
+      cashiersValue: (total: number) => `${count(total)} on the sign-in list`,
+      cashiersUnknown: "Loads at sign-in",
+      offline: "Works offline",
+      offlineValue: "After the first download",
+      continue: "Continue to sign in",
+    },
+    help: {
+      title: "Where do I get a code?",
+      steps: [
+        [
+          "The owner opens ",
+          "Settings",
+          " in the admin area and goes to ",
+          "Counters",
+          ".",
+        ],
+        ["They pick this counter and tap ", "Generate code", "."],
+        ["You type the code here. This PC then remembers its counter."],
+      ],
+      internetNote:
+        "Needs an internet connection for this step only. After that the counter keeps working offline.",
+    },
+    ownerPrompt: "Store owner?",
+    ownerLink: "Sign in to the Admin portal",
   },
 } as const;
 
