@@ -1,6 +1,7 @@
 import type { ButtonHTMLAttributes } from "react";
 
-type ButtonVariant = "primary" | "outline" | "destructive" | "gold";
+type ButtonVariant =
+  "primary" | "outline" | "secondary" | "destructive" | "gold";
 type ButtonSize = "sm" | "md" | "lg" | "xl";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -15,6 +16,8 @@ const variantClasses: Record<ButtonVariant, string> = {
   primary: "bg-blue text-white hover:brightness-95 active:brightness-90",
   outline:
     "border border-navy text-navy bg-white hover:bg-off-white active:bg-border",
+  secondary:
+    "border border-border-strong text-text bg-white hover:bg-off-white active:bg-border",
   destructive: "bg-error text-white hover:brightness-95 active:brightness-90",
   gold: "bg-gold text-navy hover:bg-gold-dark active:bg-gold-dark",
 };

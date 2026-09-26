@@ -19,6 +19,7 @@ Bricolage Grotesque (headings), DM Sans (body), JetBrains Mono (prices, bill num
 | `gold-dark`                   | `#D99520`             | Hover and pressed gold                                           |
 | `off-white`                   | `#F7F9FC`             | Page background                                                  |
 | `border`                      | `#E4EBF2`             | Borders, dividers, inactive fields                               |
+| `border-strong`               | `#C5CFDB`             | Secondary button and form field borders in Admin                 |
 | `text`                        | `#12263F`             | Text primary                                                     |
 | `text-secondary`              | `#61738A`             | Text secondary                                                   |
 | `success`                     | `#20A86B`             | Online, success, in stock                                        |
@@ -66,6 +67,7 @@ Hover darkens 8% (`hover:brightness-95` on the shared UI primitives), gold uses 
   --color-gold-dark: #d99520;
   --color-off-white: #f7f9fc;
   --color-border: #e4ebf2;
+  --color-border-strong: #c5cfdb;
   --color-text: #12263f;
   --color-text-secondary: #61738a;
   --color-success: #20a86b;

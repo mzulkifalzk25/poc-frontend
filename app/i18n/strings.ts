@@ -145,6 +145,15 @@ export const en = {
       "To use this PC again, ask the owner for a new activation code in Settings > Counters.",
     reactivate: "Activate with a new code",
   },
+  admin: {
+    paging: {
+      label: "Pages",
+      showing: (from: number, to: number, total: number) =>
+        `Showing ${count(from)}–${count(to)} of ${count(total)}`,
+      previous: "Previous",
+      next: "Next",
+    },
+  },
 } as const;
 
 export type Strings = typeof en;
