@@ -381,6 +381,24 @@ export const en = {
     scanFirst: "Scan an item first",
     refundButton: (amount: string) => `Refund ${amount}`,
     backToBilling: "Back to billing",
+    cashback: "Cashback",
+    methods: { cash: "Cash from the drawer", card: "Card", wallet: "Wallet" },
+    methodNotes: {
+      cash: "Take the cash from the drawer. The shift's expected cash goes down by this amount.",
+      card: "Recorded only. Pay the customer back on the card machine. The drawer is not touched.",
+      wallet:
+        "Recorded only. Pay the customer back through the wallet app. The drawer is not touched.",
+    },
+    reason: "Reason",
+    reasons: {
+      expired_damaged: "Damaged or expired",
+      wrong_item: "Wrong item",
+      changed_mind: "Changed mind",
+      price_error: "Price error",
+    },
+    restock: "Put back in stock",
+    noApproval:
+      "No approval needed. Every refund is saved with your name and shows in the owner's Money trail.",
     billLabel: "Bill number",
     billOptional: "(optional)",
     billPlaceholder: "e.g. 001-000498",

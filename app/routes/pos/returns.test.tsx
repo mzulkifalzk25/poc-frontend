@@ -123,7 +123,9 @@ describe("Returns: scanning", () => {
     expect(
       screen.getByRole("status", { name: "Pay back to customer" }),
     ).toHaveTextContent("Rs 840");
-    expect(screen.getByText("2 items")).toBeInTheDocument();
+    expect(
+      screen.getByText("2 items · Cash from the drawer"),
+    ).toBeInTheDocument();
   });
 
   it("types a quantity, steps it and removes the row", async () => {
@@ -338,5 +340,60 @@ describe("Returns: bill number", () => {
     expect(
       await screen.findByText("Leave empty if the customer has no receipt."),
     ).toBeInTheDocument();
+  });
+});
+
+describe("Returns: cashback, reason and restock", () => {
+  it("defaults to cash from the drawer, changed mind and back in stock", async () => {
+    await openReturns();
+
+    expect(
+      screen.getByRole("radio", { name: "Cash from the drawer" }),
+    ).toHaveAttribute("aria-checked", "true");
+    expect(
+      screen.getByText(/The shift's expected cash goes down by this amount/),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Changed mind" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    expect(
+      screen.getByRole("checkbox", { name: "Put back in stock" }),
+    ).toBeChecked();
+    expect(screen.getByText(/No approval needed/)).toBeInTheDocument();
+    expect(
+      screen.getByText("0 items · Cash from the drawer"),
+    ).toBeInTheDocument();
+  });
+
+  it("records card and wallet refunds only", async () => {
+    const { user } = await openReturns();
+
+    await user.click(screen.getByRole("radio", { name: "Card" }));
+    expect(
+      screen.getByText(
+        /Pay the customer back on the card machine. The drawer is not touched./,
+      ),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("radio", { name: "Wallet" }));
+
+    expect(screen.getByRole("radio", { name: "Card" })).toHaveAttribute(
+      "aria-checked",
+      "false",
+    );
+    expect(screen.getByText("0 items · Wallet")).toBeInTheDocument();
+  });
+
+  it("does not restock damaged or expired goods unless the cashier ticks it", async () => {
+    const { user } = await openReturns();
+    const restock = screen.getByRole("checkbox", { name: "Put back in stock" });
+
+    await user.click(screen.getByRole("radio", { name: "Damaged or expired" }));
+    expect(restock).not.toBeChecked();
+    await user.click(restock);
+    expect(restock).toBeChecked();
+    await user.click(screen.getByRole("radio", { name: "Wrong item" }));
+
+    expect(restock).toBeChecked();
   });
 });

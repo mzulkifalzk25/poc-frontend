@@ -12,12 +12,19 @@ import {
   BillNumberBar,
   type LookupState,
 } from "~/components/pos/returns/BillNumberBar";
+import { ReturnOptions } from "~/components/pos/returns/ReturnOptions";
 import { ReturnPriceTag } from "~/components/pos/returns/ReturnPriceTag";
 import { ReturnSummary } from "~/components/pos/returns/ReturnSummary";
 import { SearchOverlay } from "~/components/pos/search/SearchOverlay";
 import { useCounterKeys } from "~/components/pos/useCounterKeys";
 import type { ScannedProduct } from "~/domain/bill";
-import { returnTotals } from "~/domain/return";
+import type { PaymentMethod } from "~/domain/payment";
+import {
+  DEFAULT_REASON,
+  defaultRestock,
+  returnTotals,
+  type ReturnReason,
+} from "~/domain/return";
 import { t } from "~/i18n/t";
 import { catalogueStore } from "~/infrastructure/db/catalogue-store";
 import { billLookupDeps } from "~/infrastructure/sync/bill-lookup-deps";
@@ -67,6 +74,24 @@ function useBillLookup() {
   return { billText, setBillText, lookup, runLookup };
 }
 
+function useReturnOptions() {
+  const [method, setMethod] = useState<PaymentMethod>("cash");
+  const [reason, setReason] = useState<ReturnReason>(DEFAULT_REASON);
+  const [restock, setRestock] = useState(defaultRestock(DEFAULT_REASON));
+  return {
+    method,
+    reason,
+    restock,
+    setMethod,
+    setRestock,
+    // Picking a reason resets "Put back in stock" to that reason's default.
+    pickReason: (next: ReturnReason) => {
+      setReason(next);
+      setRestock(defaultRestock(next));
+    },
+  };
+}
+
 function useReturnLines() {
   const [state, dispatch] = useReducer(currentBillReducer, EMPTY_BILL);
   const add = useCallback((product: ScannedProduct) => {
@@ -90,6 +115,7 @@ export default function ReturnsRoute() {
     [data.categories],
   );
   const bill = useBillLookup();
+  const options = useReturnOptions();
   const totals = returnTotals(
     state.lines,
     bill.lookup.status === "found" ? bill.lookup.bill : null,
@@ -185,7 +211,20 @@ export default function ReturnsRoute() {
           }}
         />
       </section>
-      <ReturnSummary refund={totals.refund} itemCount={totals.itemCount} />
+      <ReturnSummary
+        refund={totals.refund}
+        itemCount={totals.itemCount}
+        detail={strings.methods[options.method]}
+      >
+        <ReturnOptions
+          method={options.method}
+          reason={options.reason}
+          restock={options.restock}
+          onMethod={options.setMethod}
+          onReason={options.pickReason}
+          onRestock={options.setRestock}
+        />
+      </ReturnSummary>
     </div>
   );
 }
