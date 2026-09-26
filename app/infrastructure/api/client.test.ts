@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { setDeviceToken } from "~/infrastructure/session/device-store";
+
 import { apiClient, configureApiClient } from "./client";
 import { isApiError } from "./errors";
 
@@ -17,6 +19,7 @@ describe("apiClient", () => {
 
   afterEach(() => {
     configureApiClient(null);
+    localStorage.clear();
     vi.unstubAllGlobals();
     vi.unstubAllEnvs();
   });
@@ -93,5 +96,39 @@ describe("apiClient", () => {
       (error: unknown) => isApiError(error) && error.code === "token_expired",
     );
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("sends the device token for device-scoped requests", async () => {
+    setDeviceToken("device-token-1");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(200, [])));
+
+    await apiClient.get("/pos/roster", { tokenSource: "device" });
+
+    expect(fetch).toHaveBeenCalledWith(
+      "https://api.test/pos/roster",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: "Bearer device-token-1",
+        }) as Record<string, string>,
+      }),
+    );
+  });
+
+  it("sends no authorization header for public requests", async () => {
+    configureApiClient({
+      getAccessToken: () => "user-token",
+      refresh: vi.fn(),
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(jsonResponse(200, { ok: true })),
+    );
+
+    await apiClient.post("/auth/login", {}, { tokenSource: "none" });
+
+    const [, init] = vi.mocked(fetch).mock.calls[0] as [string, RequestInit];
+    expect(
+      (init.headers as Record<string, string>).Authorization,
+    ).toBeUndefined();
   });
 });

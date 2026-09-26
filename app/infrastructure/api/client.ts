@@ -1,3 +1,5 @@
+import { getDeviceToken } from "~/infrastructure/session/device-store";
+
 import { ApiError, type ApiErrorBody } from "./errors";
 
 export interface TokenProvider {
@@ -12,28 +14,37 @@ export function configureApiClient(provider: TokenProvider | null): void {
 }
 
 type Method = "GET" | "POST" | "PATCH" | "DELETE";
+type TokenSource = "user" | "device" | "none";
 
 interface RequestOptions {
   method?: Method;
   body?: unknown;
-  auth?: boolean;
+  tokenSource?: TokenSource;
+}
+
+function resolveToken(tokenSource: TokenSource): string | null {
+  if (tokenSource === "none") {
+    return null;
+  }
+  if (tokenSource === "device") {
+    return getDeviceToken();
+  }
+  return tokenProvider ? tokenProvider.getAccessToken() : null;
 }
 
 async function sendRequest(
   path: string,
   method: Method,
   body: unknown,
-  auth: boolean,
+  tokenSource: TokenSource,
 ): Promise<Response> {
   const headers: Record<string, string> = { Accept: "application/json" };
   if (body !== undefined) {
     headers["Content-Type"] = "application/json";
   }
-  if (auth && tokenProvider) {
-    const token = tokenProvider.getAccessToken();
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
-    }
+  const token = resolveToken(tokenSource);
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
   }
   return fetch(`${import.meta.env.VITE_API_BASE_URL}${path}`, {
     method,
@@ -57,13 +68,13 @@ async function request<T>(
   path: string,
   options: RequestOptions = {},
 ): Promise<T> {
-  const { method = "GET", body, auth = true } = options;
-  const response = await sendRequest(path, method, body, auth);
+  const { method = "GET", body, tokenSource = "user" } = options;
+  const response = await sendRequest(path, method, body, tokenSource);
 
-  if (response.status === 401 && auth && tokenProvider) {
+  if (response.status === 401 && tokenSource === "user" && tokenProvider) {
     const refreshed = await tokenProvider.refresh();
     if (refreshed) {
-      const retryResponse = await sendRequest(path, method, body, auth);
+      const retryResponse = await sendRequest(path, method, body, tokenSource);
       return parseResponse<T>(retryResponse);
     }
   }

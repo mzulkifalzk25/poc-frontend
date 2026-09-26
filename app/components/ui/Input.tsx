@@ -15,7 +15,7 @@ export function Input({
 }: InputProps) {
   return (
     <div
-      className={`flex h-[46px] items-center gap-2.5 rounded-input border bg-white px-3.5 text-text-secondary focus-within:ring-2 focus-within:ring-blue ${invalid ? "border-error" : "border-border"} ${className ?? ""}`}
+      className={`flex h-[46px] items-center gap-2.5 rounded-input border bg-white px-3.5 text-text-secondary focus-within:ring-2 focus-within:ring-blue ${invalid ? "border-error" : "border-border"} ${props.disabled ? "opacity-50" : ""} ${className ?? ""}`}
     >
       {leadingIcon}
       <input

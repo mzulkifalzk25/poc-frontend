@@ -1,12 +1,17 @@
-import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router";
 
 import { AdminSignInForm } from "~/components/auth/AdminSignInForm";
 import { CashierSignInForm } from "~/components/auth/CashierSignInForm";
 import { RoleCard } from "~/components/auth/RoleCard";
 import { SignInBrandPanel } from "~/components/auth/SignInBrandPanel";
+import { useCountdown } from "~/components/auth/useCountdown";
 import { Logo } from "~/components/ui/Logo";
+import { t } from "~/i18n/t";
+import { cashierAuthRepository } from "~/infrastructure/api/cashier-auth-repository";
 import { ownerAuthRepository } from "~/infrastructure/api/owner-auth-repository";
+import { getDeviceCounter } from "~/infrastructure/session/device-store";
+import { signInCashier } from "~/use_cases/sign-in-cashier";
 import { signInOwner } from "~/use_cases/sign-in-owner";
 
 type Role = "cashier" | "admin";
@@ -45,13 +50,61 @@ const adminIcon = (
   </svg>
 );
 
-const OFFLINE_MESSAGE = "You are offline. Check your connection and try again.";
+function OnlineIndicator() {
+  const [online, setOnline] = useState(
+    typeof navigator === "undefined" ? true : navigator.onLine,
+  );
+
+  useEffect(() => {
+    function goOnline() {
+      setOnline(true);
+    }
+    function goOffline() {
+      setOnline(false);
+    }
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    return () => {
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+    };
+  }, []);
+
+  return (
+    <span
+      className={`flex items-center gap-2 font-medium ${online ? "text-success" : "text-warning"}`}
+    >
+      <span
+        className={`h-2 w-2 rounded-full ${online ? "bg-success" : "bg-warning"}`}
+      />
+      {online ? t().common.online : t().common.offline}
+    </span>
+  );
+}
+
+function NotActivatedNotice() {
+  return (
+    <p className="rounded-input bg-warning-bg px-3.5 py-2.5 text-sm text-warning">
+      {t().signIn.cashier.notActivatedHint}{" "}
+      <Link
+        to="/pos/activate"
+        className="rounded font-semibold underline focus-visible:ring-2 focus-visible:ring-blue focus-visible:outline-none"
+      >
+        {t().signIn.cashier.activateLink}
+      </Link>
+    </p>
+  );
+}
 
 export default function SignInRoute() {
   const navigate = useNavigate();
   const [role, setRole] = useState<Role>("cashier");
   const [adminPending, setAdminPending] = useState(false);
   const [adminError, setAdminError] = useState<string | null>(null);
+  const [cashierPending, setCashierPending] = useState(false);
+  const [cashierError, setCashierError] = useState<string | null>(null);
+  const throttle = useCountdown();
+  const counter = getDeviceCounter();
 
   async function handleAdminSubmit(
     login: string,
@@ -72,7 +125,27 @@ export default function SignInRoute() {
     } else if (result.status === "invalid_credentials") {
       setAdminError("Wrong email, username or password.");
     } else {
-      setAdminError(OFFLINE_MESSAGE);
+      setAdminError(t().signIn.offline);
+    }
+  }
+
+  async function handleCashierSubmit(name: string, pin: string) {
+    setCashierPending(true);
+    setCashierError(null);
+    throttle.clear();
+    const result = await signInCashier(cashierAuthRepository, name, pin);
+    setCashierPending(false);
+    const strings = t().signIn;
+    if (result.status === "success") {
+      void navigate("/pos/sign-in");
+    } else if (result.status === "name_not_found") {
+      setCashierError(strings.cashier.nameNotFound);
+    } else if (result.status === "invalid_pin") {
+      setCashierError(strings.cashier.wrongPin);
+    } else if (result.status === "throttled") {
+      throttle.start(result.retryAfterSeconds);
+    } else {
+      setCashierError(strings.offline);
     }
   }
 
@@ -140,12 +213,19 @@ export default function SignInRoute() {
           <div className="mt-[18px] flex flex-grow flex-col justify-center">
             {role === "cashier" ? (
               <CashierSignInForm
-                counterLabel="Not activated on this PC"
-                onSubmit={() => {
-                  // wired to the cashier sign-in use case in a later commit
+                counterLabel={
+                  counter
+                    ? t().signIn.cashier.thisPc(counter.name)
+                    : t().signIn.cashier.notActivated
+                }
+                disabled={!counter}
+                notice={counter ? null : <NotActivatedNotice />}
+                onSubmit={(name, pin) => {
+                  void handleCashierSubmit(name, pin);
                 }}
-                pending={false}
-                error={null}
+                pending={cashierPending}
+                error={cashierError}
+                throttledSecondsRemaining={throttle.secondsRemaining}
               />
             ) : (
               <AdminSignInForm
@@ -159,10 +239,7 @@ export default function SignInRoute() {
           </div>
 
           <div className="mt-3.5 flex items-center justify-between border-t border-border pt-3.5 text-xs text-text-secondary">
-            <span className="flex items-center gap-2 font-medium text-success">
-              <span className="h-2 w-2 rounded-full bg-success" />
-              Online
-            </span>
+            <OnlineIndicator />
             <span>MartDesk POS</span>
           </div>
         </div>

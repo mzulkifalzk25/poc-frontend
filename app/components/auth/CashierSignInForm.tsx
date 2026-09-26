@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import { Input } from "~/components/ui/Input";
+import { t } from "~/i18n/t";
 
 const personIcon = (
   <svg
@@ -90,6 +91,9 @@ export interface CashierSignInFormProps {
   onSubmit: (name: string, pin: string) => void;
   pending: boolean;
   error: string | null;
+  throttledSecondsRemaining: number | null;
+  disabled: boolean;
+  notice?: ReactNode;
 }
 
 export function CashierSignInForm({
@@ -97,6 +101,9 @@ export function CashierSignInForm({
   onSubmit,
   pending,
   error,
+  throttledSecondsRemaining,
+  disabled,
+  notice,
 }: CashierSignInFormProps) {
   const [name, setName] = useState("");
   const [pin, setPin] = useState("");
@@ -150,6 +157,7 @@ export function CashierSignInForm({
           placeholder="Enter your 4-digit PIN"
           leadingIcon={lockIcon}
           value={pin}
+          disabled={throttledSecondsRemaining !== null}
           onChange={(event) => {
             setPin(event.target.value.replace(/\D/g, "").slice(0, 4));
           }}
@@ -164,14 +172,44 @@ export function CashierSignInForm({
           }
         />
       </div>
-      {error && (
+      {notice}
+      {throttledSecondsRemaining !== null && (
+        <p className="flex items-center gap-2.5 rounded-input bg-warning-bg px-3.5 py-2.5 text-sm text-warning">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="flex-shrink-0"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 7v5l3 2" />
+          </svg>
+          <span>
+            <b>{t().signIn.cashier.throttledTitle}</b>{" "}
+            {t().signIn.cashier.throttledWait(throttledSecondsRemaining)}
+          </span>
+        </p>
+      )}
+      {throttledSecondsRemaining === null && error && (
         <p className="rounded-input bg-error-bg px-3 py-2 text-sm text-error-text">
           {error}
         </p>
       )}
       <button
         type="submit"
-        disabled={pending || name.trim() === "" || pin.length !== 4}
+        disabled={
+          disabled ||
+          throttledSecondsRemaining !== null ||
+          pending ||
+          name.trim() === "" ||
+          pin.length !== 4
+        }
         className="mt-1 flex h-[50px] items-center justify-center gap-2.5 rounded-input bg-blue text-base font-semibold text-white transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {pending ? "Signing in…" : "Sign In"}
