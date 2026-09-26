@@ -21,3 +21,9 @@ export const searchDeps: SearchDeps = {
   search: catalogueStore.search,
   getStock: catalogueStore.getStock,
 };
+
+// A returned item is always accepted back, whatever the stock says.
+export const returnScanDeps: ScanDeps = {
+  ...scanDeps,
+  blockWhenOutOfStock: () => Promise.resolve(false),
+};

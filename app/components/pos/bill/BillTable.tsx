@@ -1,11 +1,24 @@
+import type { ReactNode } from "react";
+
 import { lineTotal, type DraftLine } from "~/domain/bill";
 import { formatAmount } from "~/domain/money";
 import { t } from "~/i18n/t";
 
 import { QuantityInput } from "./QuantityInput";
 
+export interface TableTexts {
+  label: string;
+  item: string;
+  total: string;
+  emptyTitle: string;
+  emptyHint: string;
+}
+
 interface BillTableProps {
   lines: DraftLine[];
+  texts?: TableTexts;
+  priceTag?: (line: DraftLine) => ReactNode;
+  footer?: ReactNode;
   lastProductId: number | null;
   onSetQty: (productId: number, qty: number) => void;
   onChange: (productId: number, delta: number) => void;
@@ -35,13 +48,23 @@ function Icon({ path }: { path: string }) {
   );
 }
 
-function EmptyBill() {
-  const strings = t().billing.empty;
+function billTexts(): TableTexts {
+  const strings = t().billing;
+  return {
+    label: strings.table.label,
+    item: strings.table.item,
+    total: strings.table.total,
+    emptyTitle: strings.empty.title,
+    emptyHint: strings.empty.hint,
+  };
+}
+
+function EmptyBill({ texts }: { texts: TableTexts }) {
   return (
     <div className="flex h-[260px] flex-col items-center justify-center gap-2.5 text-text-secondary">
       <Icon path="M4 8V5a1 1 0 011-1h3M16 4h3a1 1 0 011 1v3M20 16v3a1 1 0 01-1 1h-3M8 20H5a1 1 0 01-1-1v-3M4 12h16" />
-      <p className="text-lg font-semibold text-text">{strings.title}</p>
-      <p className="text-sm">{strings.hint}</p>
+      <p className="text-lg font-semibold text-text">{texts.emptyTitle}</p>
+      <p className="text-sm">{texts.emptyHint}</p>
     </div>
   );
 }
@@ -50,8 +73,9 @@ function BillRow({
   line,
   index,
   highlighted,
+  priceTag,
   ...actions
-}: Omit<BillTableProps, "lines" | "lastProductId"> & {
+}: Omit<BillTableProps, "lines" | "lastProductId" | "texts" | "footer"> & {
   line: DraftLine;
   index: number;
   highlighted: boolean;
@@ -100,8 +124,11 @@ function BillRow({
           <Icon path="M12 5v14M5 12h14" />
         </button>
       </span>
-      <span role="cell" className="text-end font-mono text-base text-ink-soft">
-        {formatAmount(line.unitPrice)}
+      <span role="cell" className="flex flex-col items-end gap-0.5">
+        <span className="font-mono text-base text-ink-soft">
+          {formatAmount(line.unitPrice)}
+        </span>
+        {priceTag?.(line)}
       </span>
       <span role="cell" className="text-end font-mono text-lg font-semibold">
         {formatAmount(lineTotal(line) / 100)}
@@ -125,13 +152,15 @@ function BillRow({
 export function BillTable({
   lines,
   lastProductId,
+  texts = billTexts(),
+  footer,
   ...actions
 }: BillTableProps) {
   const strings = t().billing.table;
   return (
     <div
       role="table"
-      aria-label={strings.label}
+      aria-label={texts.label}
       className="flex min-h-0 flex-grow flex-col overflow-hidden rounded-lg border border-border bg-white"
     >
       <div
@@ -139,7 +168,7 @@ export function BillTable({
         className={`${GRID} h-11 flex-shrink-0 border-b border-border bg-off-white text-xs font-bold tracking-[0.05em] text-text-secondary uppercase`}
       >
         <span role="columnheader">{strings.number}</span>
-        <span role="columnheader">{strings.item}</span>
+        <span role="columnheader">{texts.item}</span>
         <span role="columnheader" className="text-center">
           {strings.qty}
         </span>
@@ -147,7 +176,7 @@ export function BillTable({
           {strings.price}
         </span>
         <span role="columnheader" className="text-end">
-          {strings.total}
+          {texts.total}
         </span>
         <span role="columnheader" className="sr-only">
           {strings.actions}
@@ -155,7 +184,7 @@ export function BillTable({
       </div>
       <div className="min-h-0 flex-grow overflow-y-auto">
         {lines.length === 0 ? (
-          <EmptyBill />
+          <EmptyBill texts={texts} />
         ) : (
           lines.map((line, index) => (
             <BillRow
@@ -168,6 +197,7 @@ export function BillTable({
           ))
         )}
       </div>
+      {footer}
     </div>
   );
 }

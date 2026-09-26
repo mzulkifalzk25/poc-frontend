@@ -12,6 +12,8 @@ interface ScanBoxProps {
   notice: ScanNotice | null;
   onScan: (text: string) => void;
   onLetters: (text: string) => void;
+  label?: string;
+  placeholder?: string;
   ref?: Ref<HTMLInputElement>;
 }
 
@@ -21,7 +23,14 @@ const noticeClasses = {
 };
 
 // The USB scanner types the code and presses Enter; so does a cashier typing a code.
-export function ScanBox({ notice, onScan, onLetters, ref }: ScanBoxProps) {
+export function ScanBox({
+  notice,
+  onScan,
+  onLetters,
+  label,
+  placeholder,
+  ref,
+}: ScanBoxProps) {
   const strings = t().billing;
   const [text, setText] = useState("");
   return (
@@ -48,8 +57,8 @@ export function ScanBox({ notice, onScan, onLetters, ref }: ScanBoxProps) {
       </svg>
       <input
         ref={ref}
-        aria-label={strings.scanLabel}
-        placeholder={strings.scanPlaceholder}
+        aria-label={label ?? strings.scanLabel}
+        placeholder={placeholder ?? strings.scanPlaceholder}
         autoComplete="off"
         autoFocus
         value={text}

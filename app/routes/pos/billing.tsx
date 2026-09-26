@@ -81,7 +81,9 @@ interface SearchState {
 export default function BillingRoute() {
   const data = useLoaderData<typeof clientLoader>();
   const { state, dispatch } = useCurrentBill();
-  const scanner = useScanner(scanDeps);
+  const scanner = useScanner(scanDeps, (product) => {
+    dispatch({ type: "add", product });
+  });
   const scanRef = useRef<HTMLInputElement>(null);
   const tabs = data.categories.slice(0, QUICK_TABS);
   const tints = useMemo(
