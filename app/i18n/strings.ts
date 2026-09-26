@@ -111,12 +111,17 @@ export const en = {
       codeLineSuffix: (code: string) =>
         `. Bills from here will start with ${code}.`,
       catalogue: "Catalogue",
-      catalogueValue: "Downloads before the first shift",
+      catalogueDownloading: (loaded: number) =>
+        loaded > 0 ? `Downloading… ${count(loaded)} products` : "Downloading…",
+      catalogueReady: (total: number) => `${count(total)} products ready`,
+      catalogueFailed: "Download stopped. It resumes before the first shift.",
+      retry: "Try the download again",
       cashiers: "Cashiers",
       cashiersValue: (total: number) => `${count(total)} on the sign-in list`,
       cashiersUnknown: "Loads at sign-in",
       offline: "Works offline",
       offlineValue: "After the first download",
+      offlineReady: "Ready",
       continue: "Continue to sign in",
     },
     help: {

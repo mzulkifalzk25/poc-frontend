@@ -5,6 +5,7 @@ import { CashierPortalFrame } from "~/components/pos/CashierPortalFrame";
 import { ActivateForm } from "~/components/pos/activate/ActivateForm";
 import { ActivateHelp } from "~/components/pos/activate/ActivateHelp";
 import { ActivateSuccess } from "~/components/pos/activate/ActivateSuccess";
+import { useFirstSync } from "~/components/pos/useFirstSync";
 import { t } from "~/i18n/t";
 import { activationRepository } from "~/infrastructure/api/activation-repository";
 import {
@@ -13,6 +14,7 @@ import {
   type DeviceCounter,
 } from "~/infrastructure/session/device-store";
 import { resolveActivateGuardRedirect } from "~/infrastructure/session/guards";
+import { counterSyncDeps } from "~/infrastructure/sync/counter-sync-deps";
 import {
   activateCounter,
   type ActivateCounterOutcome,
@@ -47,6 +49,7 @@ export default function ActivateRoute() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activated, setActivated] = useState<Activated | null>(null);
+  const firstSync = useFirstSync(counterSyncDeps, activated !== null);
 
   async function handleSubmit(code: string) {
     setPending(true);
@@ -75,6 +78,8 @@ export default function ActivateRoute() {
             <ActivateSuccess
               counter={activated.counter}
               cashierCount={activated.cashierCount}
+              sync={firstSync.state}
+              onRetrySync={firstSync.retry}
             />
           ) : (
             <ActivateForm
