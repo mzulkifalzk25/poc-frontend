@@ -53,6 +53,16 @@ export function setSession(next: AuthSession | null, remember = false): void {
   });
 }
 
+// Replaces the tokens of the current session, keeping where it is stored.
+export function updateSession(changes: Partial<AuthSession>): void {
+  const current = readFromStorage();
+  if (!current) {
+    return;
+  }
+  const remembered = localStorage.getItem(STORAGE_KEY) !== null;
+  setSession({ ...current, ...changes }, remembered);
+}
+
 export function subscribeSession(listener: Listener): () => void {
   listeners.add(listener);
   return () => {

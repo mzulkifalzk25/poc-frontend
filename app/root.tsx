@@ -9,13 +9,18 @@ import {
   useNavigate,
 } from "react-router";
 
+import { configureApiClient } from "~/infrastructure/api/client";
 import {
   installDeviceRevokedHandler,
   uninstallDeviceRevokedHandler,
 } from "~/infrastructure/session/device-revoked";
+import { sessionTokenProvider } from "~/infrastructure/session/session-token-provider";
 
 import type { Route } from "./+types/root";
 import "./styles/app.css";
+
+// Set before any route loader runs, so every request carries the user's token.
+configureApiClient(sessionTokenProvider);
 
 export function links(): Route.LinkDescriptors {
   return [
