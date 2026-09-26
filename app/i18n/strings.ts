@@ -303,6 +303,20 @@ export const en = {
     save: "Save changes",
     saved: (name: string) => `${name} saved`,
   },
+  productArchive: {
+    dangerTitle: "Delete this product",
+    dangerBody:
+      "The product is archived, not erased, so past bills and reports stay correct. Counters stop selling it within a minute.",
+    delete: "Delete",
+    confirmTitle: (name: string) => `Delete ${name}?`,
+    confirm: "Archive product",
+    archived: (name: string) => `${name} archived`,
+    archivedTitle: "This product is archived",
+    archivedBody:
+      "Counters do not sell it. Restore it to sell it again; its history is kept.",
+    restore: "Restore",
+    restored: (name: string) => `${name} restored`,
+  },
 } as const;
 
 export type Strings = typeof en;

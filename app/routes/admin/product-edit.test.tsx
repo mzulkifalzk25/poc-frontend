@@ -248,4 +248,76 @@ describe("ProductEditRoute", () => {
       );
     });
   });
+
+  it("deletes by archiving after a confirmation that says so", async () => {
+    const user = userEvent.setup();
+    const calls: string[] = [];
+    install({
+      "POST /products/7/archive": () => {
+        calls.push("archive");
+        return jsonResponse(204);
+      },
+    });
+
+    const drawer = await openDrawer();
+    expect(drawer).toHaveTextContent("Delete this product");
+    await user.click(within(drawer).getByRole("button", { name: "Delete" }));
+    const dialog = screen.getByRole("dialog", {
+      name: "Delete Cooking Oil 1L?",
+    });
+    expect(dialog).toHaveTextContent("archived, not erased");
+    await user.click(
+      within(dialog).getByRole("button", { name: "Archive product" }),
+    );
+
+    expect(
+      await screen.findByText("Cooking Oil 1L archived"),
+    ).toBeInTheDocument();
+    expect(calls).toEqual(["archive"]);
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("dialog", { name: "Edit product" }),
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  it("restores an archived product", async () => {
+    const user = userEvent.setup();
+    const calls: string[] = [];
+    install({
+      "GET /products/7": () => jsonResponse(200, { ...oil, is_archived: true }),
+      "POST /products/7/restore": () => {
+        calls.push("restore");
+        return jsonResponse(204);
+      },
+    });
+
+    const drawer = await openDrawer();
+    expect(drawer).toHaveTextContent("This product is archived");
+    expect(
+      within(drawer).queryByRole("button", { name: "Delete" }),
+    ).not.toBeInTheDocument();
+    await user.click(within(drawer).getByRole("button", { name: "Restore" }));
+
+    expect(
+      await screen.findByText("Cooking Oil 1L restored"),
+    ).toBeInTheDocument();
+    expect(calls).toEqual(["restore"]);
+  });
+
+  it("keeps the dialog open with the error when archiving is offline", async () => {
+    const user = userEvent.setup();
+    install({ "POST /products/7/archive": () => new TypeError("offline") });
+
+    const drawer = await openDrawer();
+    await user.click(within(drawer).getByRole("button", { name: "Delete" }));
+    await user.click(screen.getByRole("button", { name: "Archive product" }));
+
+    const dialog = screen.getByRole("dialog", {
+      name: "Delete Cooking Oil 1L?",
+    });
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent(
+      "You are offline.",
+    );
+  });
 });

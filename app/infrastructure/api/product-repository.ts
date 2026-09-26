@@ -121,4 +121,10 @@ export const productRepository: ProductRepository = {
         toEditBody(payload),
       ),
     ),
+  archive: async (id) => {
+    await apiClient.post(`/products/${String(id)}/archive`);
+  },
+  restore: async (id) => {
+    await apiClient.post(`/products/${String(id)}/restore`);
+  },
 };

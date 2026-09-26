@@ -20,6 +20,8 @@ export interface ProductRepository {
   get: (id: number) => Promise<ProductDetail>;
   priceHistory: (id: number) => Promise<PriceChange[]>;
   update: (id: number, payload: ProductEditPayload) => Promise<ProductDetail>;
+  archive: (id: number) => Promise<void>;
+  restore: (id: number) => Promise<void>;
 }
 
 export type UpdateProductOutcome<T> =
@@ -35,4 +37,18 @@ export async function updateProduct(
     return { status: "rejected", fields: validation.fields };
   }
   return runAdminWrite(() => repo.update(id, validation.payload));
+}
+
+export type ArchiveAction = "archive" | "restore";
+
+// "Delete" in the UI archives: past bills and reports keep the product.
+export function setProductArchived(
+  repo: ProductRepository,
+  id: number,
+  action: ArchiveAction,
+): Promise<WriteOutcome<ArchiveAction>> {
+  return runAdminWrite(async () => {
+    await (action === "archive" ? repo.archive(id) : repo.restore(id));
+    return action;
+  });
 }

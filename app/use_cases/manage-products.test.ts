@@ -3,7 +3,11 @@ import { describe, expect, it, vi } from "vitest";
 import type { ProductDetail } from "~/domain/product";
 import type { ProductEditDraft } from "~/domain/product-draft";
 
-import { updateProduct, type ProductRepository } from "./manage-products";
+import {
+  setProductArchived,
+  updateProduct,
+  type ProductRepository,
+} from "./manage-products";
 
 const detail: ProductDetail = {
   id: 7,
@@ -35,6 +39,8 @@ function fakeRepo(): ProductRepository {
     get: vi.fn(() => Promise.resolve(detail)),
     priceHistory: vi.fn(() => Promise.resolve([])),
     update: vi.fn(() => Promise.resolve(detail)),
+    archive: vi.fn(() => Promise.resolve()),
+    restore: vi.fn(() => Promise.resolve()),
   };
 }
 
@@ -72,6 +78,36 @@ describe("updateProduct", () => {
     repo.update = () => Promise.reject(new TypeError("Failed to fetch"));
 
     await expect(updateProduct(repo, 7, draft)).resolves.toEqual({
+      status: "offline",
+    });
+  });
+});
+
+describe("setProductArchived", () => {
+  it("archives instead of erasing", async () => {
+    const repo = fakeRepo();
+
+    await expect(setProductArchived(repo, 7, "archive")).resolves.toEqual({
+      status: "done",
+      value: "archive",
+    });
+    expect(repo.archive).toHaveBeenCalledWith(7);
+    expect(repo.restore).not.toHaveBeenCalled();
+  });
+
+  it("restores an archived product", async () => {
+    const repo = fakeRepo();
+
+    await setProductArchived(repo, 7, "restore");
+
+    expect(repo.restore).toHaveBeenCalledWith(7);
+  });
+
+  it("reports offline", async () => {
+    const repo = fakeRepo();
+    repo.archive = () => Promise.reject(new TypeError("Failed to fetch"));
+
+    await expect(setProductArchived(repo, 7, "archive")).resolves.toEqual({
       status: "offline",
     });
   });

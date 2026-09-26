@@ -3,9 +3,11 @@ import { Outlet, useSearchParams } from "react-router";
 
 import { PageHeader } from "~/components/admin/PageHeader";
 import { Paging } from "~/components/admin/Paging";
+import { ArchiveConfirm } from "~/components/admin/products/ArchiveParts";
 import { ProductFilters } from "~/components/admin/products/ProductFilters";
 import { ProductTable } from "~/components/admin/products/ProductTable";
 import type { ProductsOutletContext } from "~/components/admin/products/productsOutlet";
+import { useArchiveProduct } from "~/components/admin/products/useArchiveProduct";
 import {
   paramsFromQuery,
   queryFromParams,
@@ -18,9 +20,14 @@ import {
   ErrorState,
   LoadingState,
 } from "~/components/ui/StateBlocks";
+import { useToast } from "~/components/ui/ToastProvider";
 import { useAsyncData, type AsyncState } from "~/components/ui/useAsyncData";
 import { totalProductCount } from "~/domain/category";
-import type { ProductPage, ProductQuery } from "~/domain/product";
+import type {
+  ProductPage,
+  ProductQuery,
+  ProductSummary,
+} from "~/domain/product";
 import { t } from "~/i18n/t";
 import { categoryRepository } from "~/infrastructure/api/category-repository";
 import { productRepository } from "~/infrastructure/api/product-repository";
@@ -77,6 +84,7 @@ interface ProductResultsProps {
   search: string;
   onRetry: () => void;
   onPage: (page: number) => void;
+  onArchive: (product: ProductSummary) => void;
 }
 
 function ProductResults(props: ProductResultsProps) {
@@ -107,6 +115,7 @@ function ProductResults(props: ProductResultsProps) {
     <ProductTable
       products={state.data.results}
       archived={query.filter === "archived"}
+      onArchive={query.filter === "archived" ? undefined : props.onArchive}
       editHref={(product) => `${String(product.id)}${props.search}`}
       footer={
         <Paging
@@ -134,6 +143,14 @@ export default function ProductsRoute() {
   );
   const products = useAsyncData(loadProducts);
   const categories = useAsyncData(categoryRepository.list);
+  const { showToast } = useToast();
+  const archive = useArchiveProduct({
+    repo: productRepository,
+    onDone: (product) => {
+      showToast(t().productArchive.archived(product.name));
+      products.reload();
+    },
+  });
   const categoryList =
     categories.state.status === "ready" ? categories.state.data : [];
 
@@ -168,7 +185,9 @@ export default function ProductsRoute() {
         onPage={(page) => {
           update({ page });
         }}
+        onArchive={archive.ask}
       />
+      <ArchiveConfirm archive={archive} />
       <Outlet
         context={
           { reloadList: products.reload } satisfies ProductsOutletContext

@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { createRoutesStub } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { ToastProvider } from "~/components/ui/ToastProvider";
 import {
   installFakeFetch,
   jsonResponse,
@@ -31,7 +32,14 @@ function product(id: number, overrides: Record<string, unknown> = {}) {
 }
 
 const Stub = createRoutesStub([
-  { path: "/admin/products", Component: ProductsRoute },
+  {
+    path: "/admin/products",
+    Component: () => (
+      <ToastProvider>
+        <ProductsRoute />
+      </ToastProvider>
+    ),
+  },
 ]);
 
 function productCalls(fetchMock: ReturnType<typeof installFakeFetch>) {
@@ -172,5 +180,65 @@ describe("ProductsRoute", () => {
     await user.click(await screen.findByRole("button", { name: "Try again" }));
 
     expect(await screen.findByText("Product 1")).toBeInTheDocument();
+  });
+
+  it("archives a product from its row after a confirmation", async () => {
+    const user = userEvent.setup();
+    const archived: string[] = [];
+    installFakeFetch({
+      "GET /categories": () => jsonResponse(200, categories),
+      "GET /products": () =>
+        jsonResponse(200, {
+          count: 1,
+          results: [product(4, { name: "Sugar 1kg" })],
+        }),
+      "POST /products/4/archive": () => {
+        archived.push("4");
+        return jsonResponse(204);
+      },
+    });
+
+    render(<Stub initialEntries={["/admin/products"]} />);
+    await user.click(
+      await screen.findByRole("button", { name: "Delete Sugar 1kg" }),
+    );
+    const dialog = screen.getByRole("dialog", { name: "Delete Sugar 1kg?" });
+    expect(dialog).toHaveTextContent("The product is archived, not erased");
+    await user.click(
+      within(dialog).getByRole("button", { name: "Archive product" }),
+    );
+
+    expect(await screen.findByText("Sugar 1kg archived")).toBeInTheDocument();
+    expect(archived).toEqual(["4"]);
+  });
+
+  it("keeps the product when the confirmation is cancelled", async () => {
+    const user = userEvent.setup();
+    const fetchMock = install([product(4, { name: "Sugar 1kg" })]);
+
+    render(<Stub initialEntries={["/admin/products"]} />);
+    await user.click(
+      await screen.findByRole("button", { name: "Delete Sugar 1kg" }),
+    );
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(
+      fetchMock.mock.calls.some(([, init]) => init?.method === "POST"),
+    ).toBe(false);
+  });
+
+  it("lists archived products without a delete button", async () => {
+    const fetchMock = install([product(4, { name: "Sugar 1kg" })]);
+
+    render(<Stub initialEntries={["/admin/products?stock=archived"]} />);
+
+    expect(await screen.findByText("Archived")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Delete Sugar 1kg" }),
+    ).not.toBeInTheDocument();
+    expect(productCalls(fetchMock).at(-1)?.searchParams.get("archived")).toBe(
+      "true",
+    );
   });
 });
