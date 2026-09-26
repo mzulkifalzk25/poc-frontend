@@ -10,6 +10,7 @@ import { receivedPaisa } from "~/components/pos/bill/received";
 import { QuickItems } from "~/components/pos/bill/QuickItems";
 import { ScanBox } from "~/components/pos/bill/ScanBox";
 import { useScanner } from "~/components/pos/bill/useScanner";
+import { useCounterKeys } from "~/components/pos/useCounterKeys";
 import { useAsyncData } from "~/components/ui/useAsyncData";
 import { billTotals, type ScannedProduct } from "~/domain/bill";
 import { nextBillNumber } from "~/domain/bill-number";
@@ -68,6 +69,20 @@ export default function BillingRoute() {
     totals.total,
     receivedPaisa(state.received),
   );
+  const canHold = state.lines.length > 0;
+
+  function pay() {
+    // Completing the bill (outbox transaction and receipt) is added in the next branches.
+  }
+
+  useCounterKeys({
+    F2: () => scanRef.current?.focus(),
+    F9: () => {
+      if (payable) {
+        pay();
+      }
+    },
+  });
 
   return (
     <div className="flex h-[calc(100vh-4rem)] min-h-0">
@@ -120,9 +135,9 @@ export default function BillingRoute() {
         />
         <BillActions
           canPay={payable}
-          canHold={state.lines.length > 0}
+          canHold={canHold}
           canClear={state.lines.length > 0}
-          onPay={() => undefined}
+          onPay={pay}
           onClear={() => {
             dispatch({ type: "clear" });
           }}

@@ -317,3 +317,15 @@ describe("Billing desk: payment", () => {
     expect(screen.getByRole("button", { name: /pay & print/i })).toBeDisabled();
   });
 });
+
+describe("Billing desk: keyboard", () => {
+  it("brings the focus back to the scan box with F2", async () => {
+    const { user, scanBox } = await openDesk();
+    await user.click(screen.getByRole("radio", { name: "Card" }));
+    expect(scanBox).not.toHaveFocus();
+
+    await user.keyboard("{F2}");
+
+    expect(scanBox).toHaveFocus();
+  });
+});
