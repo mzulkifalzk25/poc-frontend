@@ -130,4 +130,21 @@ describe("recent bill store", () => {
     await expect(store.get("b")).resolves.toBeNull();
     await expect(store.forShift("shift-1")).resolves.toHaveLength(1);
   });
+
+  it("finds a bill for returns only within the last 7 days", async () => {
+    const store = createRecentBillStore(freshDatabase());
+    await store.save(
+      recentBillRow(completedBill("a", { soldAt: "2026-09-20T10:00:00Z" })),
+    );
+
+    await expect(
+      store.findRecent("002000743", new Date("2026-09-26T12:00:00Z")),
+    ).resolves.toMatchObject({ id: "a" });
+    await expect(
+      store.findRecent("002000743", new Date("2026-09-28T12:00:00Z")),
+    ).resolves.toBeNull();
+    await expect(
+      store.findRecent("009999999", new Date("2026-09-26T12:00:00Z")),
+    ).resolves.toBeNull();
+  });
 });

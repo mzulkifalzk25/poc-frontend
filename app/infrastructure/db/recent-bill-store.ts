@@ -9,6 +9,15 @@ export function createRecentBillStore(database: MartDeskDatabase) {
       await database.recent_bills.put(row);
     },
     get: async (id: string) => (await database.recent_bills.get(id)) ?? null,
+    // Only bills from the last 7 days count, even before the old ones are pruned.
+    findRecent: async (billNo: string, now: Date) => {
+      const row = await database.recent_bills
+        .where("billNo")
+        .equals(billNo)
+        .first();
+      const cutoff = now.getTime() - RECENT_BILL_DAYS * 86_400_000;
+      return row && Date.parse(row.soldAt) >= cutoff ? row.bill : null;
+    },
     findByNo: async (billNo: string) =>
       (await database.recent_bills.where("billNo").equals(billNo).first()) ??
       null,

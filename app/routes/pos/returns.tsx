@@ -8,6 +8,11 @@ import {
 } from "~/components/pos/bill/currentBillReducer";
 import { ScanBox } from "~/components/pos/bill/ScanBox";
 import { useScanner } from "~/components/pos/bill/useScanner";
+import {
+  BillNumberBar,
+  type LookupState,
+} from "~/components/pos/returns/BillNumberBar";
+import { ReturnPriceTag } from "~/components/pos/returns/ReturnPriceTag";
 import { ReturnSummary } from "~/components/pos/returns/ReturnSummary";
 import { SearchOverlay } from "~/components/pos/search/SearchOverlay";
 import { useCounterKeys } from "~/components/pos/useCounterKeys";
@@ -15,11 +20,13 @@ import type { ScannedProduct } from "~/domain/bill";
 import { returnTotals } from "~/domain/return";
 import { t } from "~/i18n/t";
 import { catalogueStore } from "~/infrastructure/db/catalogue-store";
+import { billLookupDeps } from "~/infrastructure/sync/bill-lookup-deps";
 import {
   loadStoreSettings,
   returnScanDeps,
   searchDeps,
 } from "~/infrastructure/sync/scan-deps";
+import { lookupBill } from "~/use_cases/lookup-bill";
 
 export async function clientLoader() {
   const settings = await loadStoreSettings();
@@ -41,6 +48,23 @@ function returnTexts(): TableTexts {
     emptyTitle: strings.emptyTitle,
     emptyHint: strings.emptyHint,
   };
+}
+
+function useBillLookup() {
+  const [billText, setBillText] = useState("");
+  const [lookup, setLookup] = useState<LookupState>({ status: "empty" });
+  const [checked, setChecked] = useState("");
+
+  async function runLookup() {
+    if (billText === checked) {
+      return;
+    }
+    setChecked(billText);
+    setLookup({ status: "looking" });
+    setLookup(await lookupBill(billLookupDeps(), billText));
+  }
+
+  return { billText, setBillText, lookup, runLookup };
 }
 
 function useReturnLines() {
@@ -65,7 +89,13 @@ export default function ReturnsRoute() {
       new Map(data.categories.map((category) => [category.id, category.tint])),
     [data.categories],
   );
-  const totals = returnTotals(state.lines, null, data.taxRule);
+  const bill = useBillLookup();
+  const totals = returnTotals(
+    state.lines,
+    bill.lookup.status === "found" ? bill.lookup.bill : null,
+    data.taxRule,
+  );
+  const priced = new Map(totals.lines.map((line) => [line.productId, line]));
   const strings = t().returns;
 
   function closeSearch() {
@@ -126,14 +156,18 @@ export default function ReturnsRoute() {
             {t().search.findItem}
           </button>
         </div>
+        <BillNumberBar
+          value={bill.billText}
+          lookup={bill.lookup}
+          onChange={bill.setBillText}
+          onLookup={() => void bill.runLookup()}
+        />
         <BillTable
           lines={totals.lines}
           lastProductId={state.lastProductId}
           texts={returnTexts()}
-          priceTag={() => (
-            <span className="text-[11px] font-bold text-text-secondary">
-              {strings.todayPrice}
-            </span>
+          priceTag={(line) => (
+            <ReturnPriceTag line={priced.get(line.productId)} />
           )}
           footer={
             <p className="flex-shrink-0 border-t border-border bg-off-white px-4 py-3 text-[13px] leading-normal text-text-secondary">

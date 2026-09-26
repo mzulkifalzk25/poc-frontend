@@ -381,6 +381,20 @@ export const en = {
     scanFirst: "Scan an item first",
     refundButton: (amount: string) => `Refund ${amount}`,
     backToBilling: "Back to billing",
+    billLabel: "Bill number",
+    billOptional: "(optional)",
+    billPlaceholder: "e.g. 001-000498",
+    billHints: {
+      empty: "Leave empty if the customer has no receipt.",
+      looking: "Looking up the bill…",
+      found:
+        'Prices come from this bill. Items that changed price show "Price paid".',
+      invalid: "Enter a bill number like 002-000743.",
+      notFound: (billNo: string) =>
+        `Bill ${billNo} was not found. Items are refunded at today's price.`,
+      unavailable: (billNo: string) =>
+        `Could not check bill ${billNo} right now. Items are refunded at today's price.`,
+    },
   },
   posNav: {
     returns: "Returns",

@@ -12,6 +12,7 @@ import {
   getDeviceCounter,
   getDeviceStatus,
 } from "~/infrastructure/session/device-store";
+import { recentBillStore } from "~/infrastructure/db/recent-bill-store";
 import { shiftStore } from "~/infrastructure/db/shift-store";
 import {
   resolvePosGuardRedirect,
@@ -41,6 +42,7 @@ export async function clientLoader() {
     throw redirect(shiftRedirect);
   }
   await counterClock.load();
+  await recentBillStore.prune(counterClock.now());
   const settings = await loadStoreSettings();
   return { counter, shift, storeName: settings?.storeName ?? "" };
 }
