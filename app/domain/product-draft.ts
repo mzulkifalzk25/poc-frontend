@@ -1,4 +1,7 @@
-export type ProductFieldError = "required" | "invalid_amount";
+import { isPlausibleBarcode } from "./barcode";
+
+export type ProductFieldError =
+  "required" | "invalid_amount" | "invalid_barcode";
 
 export interface ProductEditDraft {
   name: string;
@@ -44,7 +47,7 @@ export function amountError(
     : undefined;
 }
 
-function collectErrors<T>(
+export function collectErrors<T>(
   checks: Partial<Record<keyof T, ProductFieldError | undefined>>,
 ): FieldErrors<T> {
   const fields: FieldErrors<T> = {};
@@ -88,5 +91,48 @@ export function validateProductEdit(
   return {
     ok: true,
     payload: { name, categoryId, unit: draft.unit, price, cost, lowStockAlert },
+  };
+}
+
+export interface NewProductDraft extends ProductEditDraft {
+  barcode: string;
+  stock: string;
+}
+
+export interface NewProductPayload extends ProductEditPayload {
+  barcode: string;
+  stock: string;
+}
+
+function barcodeError(barcode: string): ProductFieldError | undefined {
+  if (barcode === "") {
+    return "required";
+  }
+  return isPlausibleBarcode(barcode) ? undefined : "invalid_barcode";
+}
+
+// An empty stock field means the product starts with none on hand.
+export function validateNewProduct(
+  draft: NewProductDraft,
+): Validation<NewProductDraft, NewProductPayload> {
+  const stockText = draft.stock.trim() === "" ? "0" : draft.stock;
+  const stock = parseAmountInput(stockText, 3);
+  const edit = validateProductEdit(draft);
+  const barcode = barcodeError(draft.barcode);
+  if (!edit.ok || !stock || barcode) {
+    return {
+      ok: false,
+      fields: {
+        ...(edit.ok ? {} : edit.fields),
+        ...collectErrors<NewProductDraft>({
+          barcode,
+          stock: amountError(stockText, 3),
+        }),
+      },
+    };
+  }
+  return {
+    ok: true,
+    payload: { ...edit.payload, barcode: draft.barcode, stock },
   };
 }

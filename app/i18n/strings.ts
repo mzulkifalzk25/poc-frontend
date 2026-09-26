@@ -279,6 +279,7 @@ export const en = {
     fieldErrors: {
       required: "Fill this in.",
       invalid_amount: "Enter a number, 0 or more.",
+      invalid_barcode: "Use 4 to 32 letters, digits or dashes.",
     },
   },
   productEdit: {
@@ -302,6 +303,33 @@ export const en = {
       `${oldPrice} to ${newPrice}`,
     save: "Save changes",
     saved: (name: string) => `${name} saved`,
+  },
+  scanAdd: {
+    title: "Scan to add",
+    added: (total: number) =>
+      total === 1
+        ? "1 product added this session"
+        : `${count(total)} products added this session`,
+    usb: {
+      label: "Barcode",
+      placeholder: "Scan or type a barcode, then press Enter",
+      hint: "The USB scanner types the code and presses Enter for you.",
+    },
+    start: "Scan a barcode to start.",
+    lookingUp: "Looking up the barcode…",
+    detected: "Barcode detected",
+    newTitle: "New barcode.",
+    newBody: "Not in your catalogue yet.",
+    categoryNote: "Category is pre-selected from your last scan.",
+    known: (name: string) => `${name} is already in your catalogue`,
+    lookupOffline: "You are offline. Looking up a barcode needs a connection.",
+    lookupFailed: "Could not look up this barcode. Try again.",
+    barcodeExists: "This barcode is already in your catalogue.",
+    namePlaceholder: "e.g. Wafer Chocolate 40g",
+    stock: "Stock",
+    lowStock: "Low-stock alert",
+    save: "Save",
+    saved: (name: string) => `${name} added`,
   },
   productArchive: {
     dangerTitle: "Delete this product",

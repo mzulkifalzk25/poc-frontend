@@ -127,4 +127,18 @@ export const productRepository: ProductRepository = {
   restore: async (id) => {
     await apiClient.post(`/products/${String(id)}/restore`);
   },
+  byBarcode: async (code) =>
+    toProductSummary(
+      await apiClient.get<ProductSummaryDto>(
+        `/products/by-barcode/${encodeURIComponent(code)}`,
+      ),
+    ),
+  create: async (payload) =>
+    toProductDetail(
+      await apiClient.post<ProductDetailDto>("/products", {
+        ...toEditBody(payload),
+        barcode: payload.barcode,
+        stock: payload.stock,
+      }),
+    ),
 };

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   parseAmountInput,
+  validateNewProduct,
   validateProductEdit,
   type ProductEditDraft,
 } from "./product-draft";
@@ -68,5 +69,56 @@ describe("validateProductEdit", () => {
 
   it("allows a cost above the price, which only lowers the profit", () => {
     expect(validateProductEdit({ ...draft, cost: "700" }).ok).toBe(true);
+  });
+});
+
+describe("validateNewProduct", () => {
+  const fresh = {
+    ...draft,
+    name: "Wafer Chocolate 40g",
+    barcode: "8961011200111",
+    stock: "",
+  };
+
+  it("starts an empty stock at zero", () => {
+    expect(validateNewProduct(fresh)).toEqual({
+      ok: true,
+      payload: {
+        name: "Wafer Chocolate 40g",
+        categoryId: 1,
+        unit: "litre",
+        price: "620.00",
+        cost: "570.00",
+        lowStockAlert: "15.000",
+        barcode: "8961011200111",
+        stock: "0.000",
+      },
+    });
+  });
+
+  it("keeps a typed opening stock", () => {
+    const result = validateNewProduct({ ...fresh, stock: "24" });
+
+    expect(result.ok && result.payload.stock).toBe("24.000");
+  });
+
+  it("reports the barcode and stock with the other fields", () => {
+    expect(
+      validateNewProduct({ ...fresh, barcode: "12", stock: "-2", name: "" }),
+    ).toEqual({
+      ok: false,
+      fields: {
+        name: "required",
+        barcode: "invalid_barcode",
+        stock: "invalid_amount",
+      },
+    });
+  });
+
+  it("needs a barcode", () => {
+    expect(validateNewProduct({ ...fresh, barcode: "" })).toEqual({
+      ok: false,
+      fields: { barcode: "required" },
+    });
   });
 });

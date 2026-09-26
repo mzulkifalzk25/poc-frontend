@@ -3,10 +3,12 @@ import type {
   ProductDetail,
   ProductPage,
   ProductQuery,
+  ProductSummary,
 } from "~/domain/product";
 import {
   validateProductEdit,
   type FieldErrors,
+  type NewProductPayload,
   type ProductEditDraft,
   type ProductEditPayload,
 } from "~/domain/product-draft";
@@ -22,6 +24,8 @@ export interface ProductRepository {
   update: (id: number, payload: ProductEditPayload) => Promise<ProductDetail>;
   archive: (id: number) => Promise<void>;
   restore: (id: number) => Promise<void>;
+  byBarcode: (code: string) => Promise<ProductSummary>;
+  create: (payload: NewProductPayload) => Promise<ProductDetail>;
 }
 
 export type UpdateProductOutcome<T> =

@@ -41,6 +41,8 @@ function fakeRepo(): ProductRepository {
     update: vi.fn(() => Promise.resolve(detail)),
     archive: vi.fn(() => Promise.resolve()),
     restore: vi.fn(() => Promise.resolve()),
+    byBarcode: vi.fn(() => Promise.resolve(detail)),
+    create: vi.fn(() => Promise.resolve(detail)),
   };
 }
 
