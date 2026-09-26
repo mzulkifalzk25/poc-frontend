@@ -45,5 +45,5 @@ export function useScanner(deps: ScanDeps) {
     show("success", t().billing.scanned(name, formatMoney(price)));
   }
 
-  return { notice, scan, added };
+  return { notice, scan, added, notify: show };
 }

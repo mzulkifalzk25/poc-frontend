@@ -282,6 +282,34 @@ export const en = {
         ? "1 sale could not be uploaded. Call support."
         : `${count(total)} sales could not be uploaded. Call support.`,
   },
+  held: {
+    title: "Held bills",
+    hint: "Customers who stepped away. Recall a bill to continue it.",
+    close: "Close",
+    tag: (index: number) => `H${String(index + 1)}`,
+    untitled: "Held bill",
+    meta: (items: number, time: string, ago: string) =>
+      `${count(items)} ${items === 1 ? "item" : "items"} · held ${time} (${ago})`,
+    justNow: "just now",
+    minutesAgo: (minutes: number) => `${count(minutes)} min ago`,
+    preview: (names: string[], more: number) =>
+      more > 0
+        ? `${names.join(", ")} and ${count(more)} more`
+        : names.join(", "),
+    recall: "Recall",
+    busy: "Finish, hold or clear the current bill before you recall another one.",
+    missing: "That held bill is no longer on this counter.",
+    empty: {
+      title: "No bills on hold",
+      hint: "Hold a bill with F4 when a customer steps away.",
+    },
+    footer: "Held bills stay on this counter until the end of the shift.",
+    holdTitle: "Hold this bill",
+    holdLabel: "Who is it for? (optional)",
+    holdPlaceholder: "e.g. Customer in blue kurta",
+    holdConfirm: "Hold bill",
+    heldNotice: (title: string) => `Bill held: ${title}`,
+  },
   posNav: {
     returns: "Returns",
     held: "Held bills",

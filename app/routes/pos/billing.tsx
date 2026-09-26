@@ -11,6 +11,7 @@ import { receivedPaisa } from "~/components/pos/bill/received";
 import { QuickItems } from "~/components/pos/bill/QuickItems";
 import { ScanBox } from "~/components/pos/bill/ScanBox";
 import { useScanner } from "~/components/pos/bill/useScanner";
+import { HoldDialog } from "~/components/pos/held/HoldDialog";
 import { SearchOverlay } from "~/components/pos/search/SearchOverlay";
 import { useCounterKeys } from "~/components/pos/useCounterKeys";
 import { useAsyncData } from "~/components/ui/useAsyncData";
@@ -25,6 +26,7 @@ import { META_KEYS } from "~/infrastructure/db/meta-keys";
 import { metaStore } from "~/infrastructure/db/meta-store";
 import { shiftStore } from "~/infrastructure/db/shift-store";
 import { getDeviceCounter } from "~/infrastructure/session/device-store";
+import { heldBillDeps } from "~/infrastructure/sync/held-bill-deps";
 import { completeSaleDeps } from "~/infrastructure/sync/sale-deps";
 import {
   loadStoreSettings,
@@ -32,6 +34,7 @@ import {
   searchDeps,
 } from "~/infrastructure/sync/scan-deps";
 import { completeSale } from "~/use_cases/complete-sale";
+import { holdBill } from "~/use_cases/held-bills";
 
 const QUICK_TABS = 3;
 const QUICK_TILES = 8;
@@ -92,6 +95,7 @@ export default function BillingRoute() {
   const navigate = useNavigate();
   const revalidator = useRevalidator();
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [holding, setHolding] = useState(false);
 
   function closeSearch() {
     setSearch(null);
@@ -140,6 +144,30 @@ export default function BillingRoute() {
     }
   }
 
+  async function hold(title: string) {
+    setHolding(false);
+    if (!data.shift) {
+      return;
+    }
+    const result = await holdBill(heldBillDeps, {
+      id: crypto.randomUUID(),
+      shiftId: data.shift.id,
+      cashierId: data.shift.cashierId,
+      title,
+      lines: state.lines,
+      taxRule: data.taxRule,
+      heldAt: counterClock.now().toISOString(),
+    });
+    if (result.status === "held") {
+      dispatch({ type: "clear" });
+      scanner.notify(
+        "success",
+        t().held.heldNotice(result.bill.title || t().held.untitled),
+      );
+    }
+    scanRef.current?.focus();
+  }
+
   function newSale() {
     dispatch({ type: "clear" });
     setCompleted(null);
@@ -153,6 +181,12 @@ export default function BillingRoute() {
       scanRef.current?.focus();
     },
     Escape: search ? closeSearch : undefined,
+    F4:
+      canHold && !completed
+        ? () => {
+            setHolding(true);
+          }
+        : undefined,
     F9: completed ? undefined : () => void pay(),
   });
 
@@ -242,6 +276,9 @@ export default function BillingRoute() {
         <BillActions
           canPay={payable}
           canHold={canHold}
+          onHold={() => {
+            setHolding(true);
+          }}
           canClear={state.lines.length > 0}
           onPay={() => void pay()}
           onClear={() => {
@@ -249,6 +286,14 @@ export default function BillingRoute() {
           }}
         />
       </CurrentBillPanel>
+      {holding && (
+        <HoldDialog
+          onHold={(title) => void hold(title)}
+          onCancel={() => {
+            setHolding(false);
+          }}
+        />
+      )}
       {completed && (
         <PaymentReceivedOverlay
           bill={completed}

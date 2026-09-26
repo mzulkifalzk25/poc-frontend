@@ -485,3 +485,43 @@ describe("Billing desk: search", () => {
     expect(scanBox).toHaveFocus();
   });
 });
+
+describe("Billing desk: hold", () => {
+  it("holds the bill with a title from the Hold button", async () => {
+    const { user, scanBox } = await openDesk();
+    await user.type(scanBox, "8961007800077{Enter}");
+    await screen.findByLabelText("Quantity of Bread Loaf");
+
+    await user.click(screen.getByRole("button", { name: "Hold bill · F4" }));
+    await user.type(
+      screen.getByLabelText("Who is it for? (optional)"),
+      "Ahmed{Enter}",
+    );
+
+    expect(await screen.findByText("Bill held: Ahmed")).toBeInTheDocument();
+    expect(screen.getByText("Ready for the next customer")).toBeInTheDocument();
+    const held = await db.held_bills.toArray();
+    expect(held).toEqual([
+      expect.objectContaining({
+        shiftId: "shift-1",
+        title: "Ahmed",
+        itemCount: 1,
+        total: "150.00",
+      }),
+    ]);
+  });
+
+  it("opens the hold dialog with F4 only when there is something to hold", async () => {
+    const { user, scanBox } = await openDesk();
+    await user.keyboard("{F4}");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    await user.type(scanBox, "8961007800077{Enter}");
+    await screen.findByLabelText("Quantity of Bread Loaf");
+    await user.keyboard("{F4}");
+
+    expect(
+      screen.getByRole("dialog", { name: "Hold this bill" }),
+    ).toBeInTheDocument();
+  });
+});

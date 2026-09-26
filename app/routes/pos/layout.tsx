@@ -5,6 +5,7 @@ import { CashierTopBar } from "~/components/pos/CashierTopBar";
 import { SyncPill } from "~/components/pos/SyncPill";
 import { useCounterSync } from "~/components/pos/useCounterSync";
 import { useHeartbeat } from "~/components/pos/useHeartbeat";
+import { useHeldCount } from "~/components/pos/useHeldCount";
 import { useUploadWorker } from "~/components/pos/useUploadWorker";
 import { counterClock } from "~/infrastructure/clock";
 import {
@@ -49,6 +50,7 @@ export default function PosLayout() {
   useCounterSync(counterSyncDeps);
   useHeartbeat(heartbeatDeps);
   useUploadWorker(uploadDeps);
+  const heldCount = useHeldCount(shift?.id ?? null);
 
   return (
     <div className="flex min-h-screen flex-col bg-off-white">
@@ -57,6 +59,7 @@ export default function PosLayout() {
         counterName={counter?.name ?? null}
         cashierName={shift?.cashierName ?? null}
         statusPill={<SyncPill />}
+        heldCount={heldCount}
       />
       <main className="flex-1">
         <CurrentBillProvider>
