@@ -12,6 +12,7 @@ import {
 
 import {
   isFirstSyncDone,
+  runDeltaSync,
   runFirstSync,
   type CounterSyncApi,
   type SyncDeps,
@@ -145,5 +146,60 @@ describe("runFirstSync", () => {
     await expect(runFirstSync(deps)).rejects.toThrow();
     await expect(isFirstSyncDone(deps.meta)).resolves.toBe(false);
     await expect(deps.meta.get(META_KEYS.cursors)).resolves.toBeNull();
+  });
+});
+
+describe("runDeltaSync", () => {
+  it("runs the first sync when it never finished", async () => {
+    const deps = syncDeps();
+
+    await runDeltaSync(deps);
+
+    expect(vi.mocked(deps.api.products).mock.calls[0]).toEqual(["0"]);
+    await expect(isFirstSyncDone(deps.meta)).resolves.toBe(true);
+  });
+
+  it("asks for changes since the cursors with a 10 s overlap", async () => {
+    const deps = syncDeps();
+    await runFirstSync(deps);
+    vi.mocked(deps.api.products).mockClear();
+
+    await runDeltaSync(deps);
+
+    expect(vi.mocked(deps.api.products).mock.calls[0]).toEqual(["p2"]);
+    expect(vi.mocked(deps.api.people).mock.calls.at(-1)).toEqual([
+      "2026-09-26T09:59:50.000Z",
+    ]);
+  });
+
+  it("removes archived products and deactivated cashiers locally", async () => {
+    const api = fakeApi();
+    const deps = syncDeps(api);
+    await runFirstSync(deps);
+    api.products = () =>
+      Promise.resolve({
+        products: [productRow(1, { isArchived: true })],
+        categories: [],
+        nextSince: "p3",
+        hasMore: false,
+      });
+    api.people = () =>
+      Promise.resolve({
+        people: [
+          {
+            id: 12,
+            fullName: "Zainab Khan",
+            initials: "ZK",
+            pinVerifier: null,
+            active: false,
+            unlockedAt: null,
+          },
+        ],
+        nextSince: "2026-09-26T10:01:00Z",
+      });
+
+    const result = await runDeltaSync(deps);
+
+    expect(result).toEqual({ products: 1, cashiers: 0 });
   });
 });

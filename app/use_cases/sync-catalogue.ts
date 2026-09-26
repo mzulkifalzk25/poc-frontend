@@ -1,5 +1,5 @@
 import type { StoreSettings } from "~/domain/store-settings";
-import { FIRST_CURSOR } from "~/domain/sync-cursor";
+import { FIRST_CURSOR, withOverlap } from "~/domain/sync-cursor";
 import type { CatalogueStore } from "~/infrastructure/db/catalogue-store";
 import { META_KEYS, type SyncCursors } from "~/infrastructure/db/meta-keys";
 import type { MetaStore } from "~/infrastructure/db/meta-store";
@@ -131,5 +131,23 @@ export async function runFirstSync(
 ): Promise<SyncSummary> {
   await pullAll(deps, START, onProgress);
   await deps.meta.set(META_KEYS.firstSyncDone, true);
+  return summary(deps);
+}
+
+// Changes since the saved cursors, moved back 10 s; the first run if it never finished.
+export async function runDeltaSync(deps: SyncDeps): Promise<SyncSummary> {
+  const cursors = await deps.meta.get<SyncCursors>(META_KEYS.cursors);
+  if (!cursors || !(await isFirstSyncDone(deps.meta))) {
+    return runFirstSync(deps);
+  }
+  await pullAll(
+    deps,
+    {
+      products: withOverlap(cursors.products),
+      stock: withOverlap(cursors.stock),
+      people: withOverlap(cursors.people),
+    },
+    () => undefined,
+  );
   return summary(deps);
 }
