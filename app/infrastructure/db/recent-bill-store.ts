@@ -13,9 +13,7 @@ export function createRecentBillStore(database: MartDeskDatabase) {
       (await database.recent_bills.where("billNo").equals(billNo).first()) ??
       null,
     forShift: (shiftId: string) =>
-      database.recent_bills
-        .filter((row) => row.bill.shift_id === shiftId)
-        .toArray(),
+      database.recent_bills.filter((row) => row.shiftId === shiftId).toArray(),
     // Keeps this counter's bills for 7 days, for reprints and returns.
     prune: async (now: Date) => {
       const cutoff = new Date(

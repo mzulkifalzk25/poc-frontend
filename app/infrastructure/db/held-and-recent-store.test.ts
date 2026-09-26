@@ -2,7 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import { createHeldBillStore } from "./held-bill-store";
 import { createRecentBillStore } from "./recent-bill-store";
-import { billUpload, freshDatabaseFactory } from "./test-database";
+import {
+  completedBill,
+  freshDatabaseFactory,
+  recentBillRow,
+} from "./test-database";
 
 const freshDatabase = freshDatabaseFactory();
 
@@ -43,18 +47,17 @@ describe("held bill store", () => {
 describe("recent bill store", () => {
   it("finds a bill by number and drops bills older than 7 days", async () => {
     const store = createRecentBillStore(freshDatabase());
-    await store.save({
-      id: "a",
-      billNo: "002000743",
-      soldAt: "2026-09-26T10:00:00Z",
-      bill: billUpload("a"),
-    });
-    await store.save({
-      id: "b",
-      billNo: "002000700",
-      soldAt: "2026-09-18T10:00:00Z",
-      bill: billUpload("b"),
-    });
+    await store.save(
+      recentBillRow(completedBill("a", { soldAt: "2026-09-26T10:00:00Z" })),
+    );
+    await store.save(
+      recentBillRow(
+        completedBill("b", {
+          billNo: "002000700",
+          soldAt: "2026-09-18T10:00:00Z",
+        }),
+      ),
+    );
 
     await expect(store.findByNo("002000743")).resolves.toMatchObject({
       id: "a",

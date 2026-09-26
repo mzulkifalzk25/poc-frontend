@@ -2,7 +2,9 @@ import Dexie from "dexie";
 import { afterEach } from "vitest";
 
 import { MartDeskDatabase } from "./database";
-import type { BillUpload, ProductRow } from "./rows";
+import type { CompletedBill } from "~/domain/completed-bill";
+
+import type { BillUpload, ProductRow, RecentBillRow } from "./rows";
 
 // Test helper: a fresh fake-indexeddb database per test, deleted afterwards.
 export function freshDatabaseFactory(): () => MartDeskDatabase {
@@ -73,5 +75,62 @@ export function billUpload(
       total: "100.00",
     },
     ...overrides,
+  };
+}
+
+export function completedBill(
+  id: string,
+  overrides: Partial<CompletedBill> = {},
+): CompletedBill {
+  return {
+    id,
+    billNo: "002000743",
+    shiftId: "shift-1",
+    cashierId: 12,
+    cashierName: "Zainab Khan",
+    counterName: "Counter 2",
+    soldAt: "2026-09-26T12:47:03.000Z",
+    lines: [
+      {
+        productId: 4,
+        barcode: "8961004500044",
+        name: "Fresh Milk 1L",
+        unitPrice: "290.00",
+        qty: 2,
+      },
+      {
+        productId: 1,
+        barcode: "8961001200011",
+        name: "Basmati Rice 5kg",
+        unitPrice: "1650.00",
+        qty: 1,
+      },
+    ],
+    totals: {
+      itemCount: 3,
+      subtotal: 223000,
+      tax: 0,
+      rounding: 0,
+      total: 223000,
+    },
+    taxRate: "0.00",
+    payment: {
+      id: `${id}-pay`,
+      method: "cash",
+      amount: 223000,
+      tendered: 500000,
+      change: 277000,
+    },
+    ...overrides,
+  };
+}
+
+export function recentBillRow(bill: CompletedBill): RecentBillRow {
+  return {
+    id: bill.id,
+    billNo: bill.billNo,
+    soldAt: bill.soldAt,
+    shiftId: bill.shiftId,
+    bill,
   };
 }

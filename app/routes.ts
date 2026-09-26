@@ -11,10 +11,10 @@ export default [
   route("pos/activate", "routes/pos/activate.tsx"),
   route("pos/deactivated", "routes/pos/deactivated.tsx"),
   route("pos/sign-in", "routes/pos/sign-in.tsx"),
+  route("pos/receipt", "routes/pos/receipt.tsx"),
   layout("routes/pos/layout.tsx", [
     ...prefix("pos", [
       index("routes/pos/billing.tsx"),
-      route("receipt", "routes/pos/receipt.tsx"),
       route("held", "routes/pos/held.tsx"),
       route("returns", "routes/pos/returns.tsx"),
       route("shift", "routes/pos/shift.tsx"),

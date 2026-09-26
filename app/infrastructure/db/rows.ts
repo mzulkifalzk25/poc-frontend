@@ -1,4 +1,5 @@
 import type { BillLine } from "~/domain/bill-line";
+import type { CompletedBill } from "~/domain/completed-bill";
 
 export interface ProductRow {
   id: number;
@@ -116,9 +117,11 @@ export interface HeldBillRow {
   heldAt: string;
 }
 
+// The full bill as sold on this PC, for reprints and returns (last 7 days).
 export interface RecentBillRow {
   id: string;
   billNo: string;
   soldAt: string;
-  bill: BillUpload;
+  shiftId: string;
+  bill: CompletedBill;
 }

@@ -50,3 +50,31 @@
   --radius-xl: 24px;
   --radius-pill: 9999px;
 }
+
+/* 80 mm thermal receipt: 72 mm printable width, page as long as the bill. */
+.receipt-80 {
+  width: 302px;
+}
+
+@media print {
+  @page {
+    size: 80mm auto;
+    margin: 0;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .receipt-page {
+    min-height: 0;
+    padding: 0;
+    background: #fff;
+  }
+
+  .receipt-80 {
+    width: 72mm;
+    padding: 2mm 4mm;
+    color: #000;
+  }
+}
