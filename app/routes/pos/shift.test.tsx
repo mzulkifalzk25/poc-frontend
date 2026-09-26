@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { createRoutesStub } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { CurrentBillProvider } from "~/components/pos/bill/CurrentBillProvider";
 import {
   installFakeFetch,
   jsonResponse,
@@ -17,12 +18,21 @@ import {
   recentBillRow,
 } from "~/infrastructure/db/test-database";
 import { saveDeviceMeta } from "~/infrastructure/session/device-store";
-import { setSession } from "~/infrastructure/session/session-store";
+import { getSession, setSession } from "~/infrastructure/session/session-store";
 
 import ShiftRoute, { clientLoader } from "./shift";
 
 const Stub = createRoutesStub([
-  { path: "/pos/shift", Component: ShiftRoute, loader: clientLoader },
+  {
+    path: "/pos/shift",
+    loader: clientLoader,
+    Component: () => (
+      <CurrentBillProvider>
+        <ShiftRoute />
+      </CurrentBillProvider>
+    ),
+  },
+  { path: "/", Component: () => <div>Sign in page</div> },
 ]);
 
 const cashBill = completedBill("b-cash");
@@ -140,5 +150,121 @@ describe("End of shift", () => {
       expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     });
     expect(await db.bills_outbox.count()).toBe(0);
+  });
+
+  it("closes the shift, shows the server's check and signs out", async () => {
+    const user = userEvent.setup();
+    const bodies: unknown[] = [];
+    await db.held_bills.put({
+      id: "h1",
+      shiftId: "shift-1",
+      cashierId: 12,
+      title: "",
+      lines: [],
+      itemCount: 0,
+      total: "0.00",
+      heldAt: "2026-09-19T10:00:00Z",
+    });
+    installFakeFetch({
+      "POST /shifts/shift-1/close": (body) => {
+        bodies.push(body);
+        return jsonResponse(200, {
+          expected_cash: "7230.00",
+          difference: "0.00",
+          server_summary: {},
+          mismatch: false,
+        });
+      },
+    });
+    await openScreen();
+
+    await user.type(screen.getByLabelText("Cash you counted"), "7230");
+    await user.click(
+      screen.getByRole("button", { name: "Close shift and sign out" }),
+    );
+
+    const dialog = await screen.findByRole("dialog", { name: "Shift closed" });
+    expect(dialog).toHaveTextContent(
+      "You counted Rs 7,230. This counter expected Rs 7,230.",
+    );
+    expect(dialog).toHaveTextContent("The server expected Rs 7,230.");
+    expect(dialog).toHaveTextContent("The server's totals match this counter.");
+    expect(bodies).toEqual([
+      expect.objectContaining({
+        counted_cash: "7230.00",
+        cashier_id: 12,
+        unsynced_count: 0,
+        local_summary: expect.objectContaining({
+          bills: 2,
+          expected_cash: "7230.00",
+        }) as unknown,
+      }),
+    ]);
+    expect(await shiftStore.get("shift-1")).toMatchObject({
+      status: "closed",
+      syncState: "closed_synced",
+    });
+    expect(await db.held_bills.count()).toBe(0);
+
+    await user.click(within(dialog).getByRole("button", { name: "Sign out" }));
+    expect(await screen.findByText("Sign in page")).toBeInTheDocument();
+    expect(getSession()).toBeNull();
+  });
+
+  it("closes offline and says the close will upload later", async () => {
+    const user = userEvent.setup();
+    installFakeFetch({
+      "POST /shifts/shift-1/close": () => new TypeError("Failed to fetch"),
+    });
+    await openScreen();
+
+    await user.type(screen.getByLabelText("Cash you counted"), "7000");
+    await user.click(
+      screen.getByRole("button", { name: "Close shift and sign out" }),
+    );
+
+    expect(
+      await screen.findByRole("dialog", { name: "Shift closed" }),
+    ).toHaveTextContent(
+      "Saved on this PC. It uploads to the server when the PC is online.",
+    );
+    expect(await shiftStore.get("shift-1")).toMatchObject({
+      status: "closed",
+      syncState: "close_pending",
+      countedCash: "7000.00",
+    });
+  });
+
+  it("shows when the server's totals differ", async () => {
+    const user = userEvent.setup();
+    installFakeFetch({
+      "POST /shifts/shift-1/close": () =>
+        jsonResponse(200, {
+          expected_cash: "7880.00",
+          difference: "-650.00",
+          server_summary: {},
+          mismatch: true,
+        }),
+    });
+    await openScreen();
+
+    await user.type(screen.getByLabelText("Cash you counted"), "7230");
+    await user.click(
+      screen.getByRole("button", { name: "Close shift and sign out" }),
+    );
+
+    const dialog = await screen.findByRole("dialog", { name: "Shift closed" });
+    expect(dialog).toHaveTextContent("The server expected Rs 7,880.");
+    expect(dialog).toHaveTextContent(
+      "The server's totals differ from this counter.",
+    );
+  });
+
+  it("keeps Close off until the cash is counted", async () => {
+    await openScreen();
+
+    expect(
+      screen.getByRole("button", { name: "Close shift and sign out" }),
+    ).toBeDisabled();
   });
 });

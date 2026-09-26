@@ -104,6 +104,16 @@ export interface ShiftRow {
   closedAt: string | null;
   countedCash: string | null;
   syncState: ShiftSyncState;
+  // Filled when the shift is closed on this PC, sent with /shifts/{id}/close.
+  closeSummary?: Record<string, string | number> | null;
+  unsyncedAtClose?: number | null;
+  serverResult?: ShiftServerResult | null;
+}
+
+export interface ShiftServerResult {
+  expectedCash: string;
+  difference: string;
+  mismatch: boolean;
 }
 
 export interface HeldBillRow {

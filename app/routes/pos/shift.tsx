@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { Link, useLoaderData, useRevalidator } from "react-router";
+import { Link, useLoaderData, useNavigate, useRevalidator } from "react-router";
 
+import { useCurrentBill } from "~/components/pos/bill/CurrentBillProvider";
 import { DrawerCountCard } from "~/components/pos/shift/DrawerCountCard";
+import { ShiftClosedDialog } from "~/components/pos/shift/ShiftClosedDialog";
 import { ShiftSummaryCard } from "~/components/pos/shift/ShiftSummaryCard";
 import { UnsyncedBanner } from "~/components/pos/shift/UnsyncedBanner";
 import { formatClockTime, formatWeekdayDayMonth } from "~/domain/dates";
@@ -11,9 +13,13 @@ import { t } from "~/i18n/t";
 import { recentBillStore } from "~/infrastructure/db/recent-bill-store";
 import { shiftStore } from "~/infrastructure/db/shift-store";
 import { getDeviceCounter } from "~/infrastructure/session/device-store";
+import type { ShiftServerResult } from "~/infrastructure/db/rows";
+import { setSession } from "~/infrastructure/session/session-store";
 import { STORE_TIME_ZONE } from "~/infrastructure/store-time-zone";
 import { countUnsyncedSales } from "~/infrastructure/sync/heartbeat-deps";
+import { closeShiftDeps } from "~/infrastructure/sync/shift-deps";
 import { uploadDeps } from "~/infrastructure/sync/upload-deps";
+import { closeShift } from "~/use_cases/close-shift";
 import { uploadOutbox } from "~/use_cases/upload-outbox";
 
 export async function clientLoader() {
@@ -44,6 +50,39 @@ export default function ShiftRoute() {
   const strings = t().endShift;
   const [counted, setCounted] = useState("");
   const [syncing, setSyncing] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const [closeError, setCloseError] = useState<string | null>(null);
+  const [closed, setClosed] = useState<{
+    server: ShiftServerResult | null;
+  } | null>(null);
+  const { dispatch } = useCurrentBill();
+  const navigate = useNavigate();
+
+  async function handleClose() {
+    if (!data.shift) {
+      return;
+    }
+    setClosing(true);
+    const result = await closeShift(closeShiftDeps, {
+      shift: data.shift,
+      counted,
+      totals: data.totals,
+      expected: data.expected,
+      unsyncedCount: data.unsynced,
+    });
+    setClosing(false);
+    if (result.status === "closed") {
+      setClosed({ server: result.server });
+    } else {
+      setCloseError(strings.invalidCounted);
+    }
+  }
+
+  function signOut() {
+    dispatch({ type: "clear" });
+    setSession(null);
+    void navigate("/");
+  }
 
   async function syncNow() {
     setSyncing(true);
@@ -89,18 +128,38 @@ export default function ShiftRoute() {
           totals={data.totals}
           expected={data.expected}
           counted={counted}
-          onCounted={setCounted}
+          onCounted={(text) => {
+            setCounted(text);
+            setCloseError(null);
+          }}
           footer={
             <button
               type="button"
-              disabled
+              disabled={closing || counted.trim() === ""}
+              onClick={() => void handleClose()}
               className="flex h-16 w-full items-center justify-center rounded-lg bg-blue text-[19px] font-bold text-white transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-blue focus-visible:ring-offset-2 focus-visible:outline-none active:brightness-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {strings.close}
+              {closing ? strings.closing : strings.close}
             </button>
           }
         />
       </div>
+      {closeError && (
+        <p
+          role="alert"
+          className="rounded-lg bg-error-bg px-4 py-3 font-semibold text-error-text"
+        >
+          {closeError}
+        </p>
+      )}
+      {closed && (
+        <ShiftClosedDialog
+          counted={counted}
+          expected={data.expected}
+          server={closed.server}
+          onSignOut={signOut}
+        />
+      )}
     </div>
   );
 }

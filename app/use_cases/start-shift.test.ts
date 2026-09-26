@@ -131,7 +131,7 @@ describe("uploadPendingShifts", () => {
 
     const sent = await uploadPendingShifts({
       shifts: { waitingUpload: () => Promise.resolve([pending]), update },
-      api: { open },
+      api: { open, close: vi.fn() },
     });
 
     expect(sent).toBe(1);
@@ -151,9 +151,51 @@ describe("uploadPendingShifts", () => {
             Promise.resolve([{ ...openShift, syncState: "open_pending" }]),
           update,
         },
-        api: { open: () => Promise.reject(new TypeError("offline")) },
+        api: {
+          open: () => Promise.reject(new TypeError("offline")),
+          close: vi.fn(),
+        },
       }),
     ).rejects.toThrow("offline");
     expect(update).not.toHaveBeenCalled();
+  });
+
+  it("sends a closed shift after its open and keeps the server's answer", async () => {
+    const updates: unknown[] = [];
+    let rows = [
+      {
+        ...openShift,
+        status: "closed" as const,
+        syncState: "open_pending" as const,
+      },
+    ];
+    const result = {
+      expectedCash: "7230.00",
+      difference: "0.00",
+      mismatch: false,
+    };
+
+    const sent = await uploadPendingShifts({
+      shifts: {
+        waitingUpload: () => Promise.resolve(rows),
+        update: (id, changes) => {
+          updates.push([id, changes]);
+          rows = rows.map((row) =>
+            row.id === id ? { ...row, ...changes } : row,
+          ) as typeof rows;
+          return Promise.resolve();
+        },
+      },
+      api: {
+        open: () => Promise.resolve(),
+        close: () => Promise.resolve(result),
+      },
+    });
+
+    expect(sent).toBe(2);
+    expect(updates).toEqual([
+      ["shift-0", { syncState: "close_pending" }],
+      ["shift-0", { syncState: "closed_synced", serverResult: result }],
+    ]);
   });
 });

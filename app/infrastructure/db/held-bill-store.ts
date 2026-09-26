@@ -12,6 +12,9 @@ export function createHeldBillStore(database: MartDeskDatabase) {
       database.held_bills.where("shiftId").equals(shiftId).sortBy("heldAt"),
     countForShift: (shiftId: string) =>
       database.held_bills.where("shiftId").equals(shiftId).count(),
+    clearForShift: async (shiftId: string) => {
+      await database.held_bills.where("shiftId").equals(shiftId).delete();
+    },
     remove: async (id: string) => {
       await database.held_bills.delete(id);
     },

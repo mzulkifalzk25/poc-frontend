@@ -25,4 +25,26 @@ export const shiftApi: ShiftUploadApi = {
       }
     }
   },
+  close: async (shift) => {
+    const answer = await apiClient.post<{
+      expected_cash: string;
+      difference: string;
+      mismatch: boolean;
+    }>(
+      `/shifts/${shift.id}/close`,
+      {
+        closed_at: shift.closedAt,
+        counted_cash: shift.countedCash,
+        local_summary: shift.closeSummary ?? {},
+        unsynced_count: shift.unsyncedAtClose ?? 0,
+        cashier_id: shift.cashierId,
+      },
+      { tokenSource: cashierTokenSource() },
+    );
+    return {
+      expectedCash: answer.expected_cash,
+      difference: answer.difference,
+      mismatch: answer.mismatch,
+    };
+  },
 };

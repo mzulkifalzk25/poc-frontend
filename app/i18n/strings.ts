@@ -346,6 +346,20 @@ export const en = {
     over: (amount: string) => `${amount} over`,
     short: (amount: string) => `${amount} short`,
     close: "Close shift and sign out",
+    closing: "Closing…",
+    invalidCounted: "Enter the cash you counted, 0 or more.",
+    closed: {
+      title: "Shift closed",
+      counted: (counted: string, expected: string) =>
+        `You counted ${counted}. This counter expected ${expected}.`,
+      serverExpected: (amount: string) => `The server expected ${amount}.`,
+      serverMatches: "The server's totals match this counter.",
+      serverMismatch:
+        "The server's totals differ from this counter. The owner will see it.",
+      notUploaded:
+        "Saved on this PC. It uploads to the server when the PC is online.",
+      signOut: "Sign out",
+    },
   },
   posNav: {
     returns: "Returns",
