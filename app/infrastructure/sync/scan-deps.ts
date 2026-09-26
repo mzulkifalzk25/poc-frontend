@@ -1,5 +1,6 @@
 import type { StoreSettings } from "~/domain/store-settings";
 import type { ScanDeps } from "~/use_cases/scan-product";
+import type { SearchDeps } from "~/use_cases/search-products";
 
 import { catalogueStore } from "../db/catalogue-store";
 import { META_KEYS } from "../db/meta-keys";
@@ -14,4 +15,9 @@ export const scanDeps: ScanDeps = {
   getStock: catalogueStore.getStock,
   blockWhenOutOfStock: async () =>
     (await loadStoreSettings())?.blockWhenOutOfStock === true,
+};
+
+export const searchDeps: SearchDeps = {
+  search: catalogueStore.search,
+  getStock: catalogueStore.getStock,
 };

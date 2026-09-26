@@ -11,6 +11,7 @@ export interface ScanNotice {
 interface ScanBoxProps {
   notice: ScanNotice | null;
   onScan: (text: string) => void;
+  onLetters: (text: string) => void;
   ref?: Ref<HTMLInputElement>;
 }
 
@@ -20,7 +21,7 @@ const noticeClasses = {
 };
 
 // The USB scanner types the code and presses Enter; so does a cashier typing a code.
-export function ScanBox({ notice, onScan, ref }: ScanBoxProps) {
+export function ScanBox({ notice, onScan, onLetters, ref }: ScanBoxProps) {
   const strings = t().billing;
   const [text, setText] = useState("");
   return (
@@ -54,7 +55,14 @@ export function ScanBox({ notice, onScan, ref }: ScanBoxProps) {
         value={text}
         className="min-w-0 flex-grow bg-transparent text-xl text-text outline-none"
         onChange={(event) => {
-          setText(event.target.value);
+          const next = event.target.value;
+          // Scanners send digits; a letter means the cashier is searching by name.
+          if (/\p{L}/u.test(next)) {
+            setText("");
+            onLetters(next);
+          } else {
+            setText(next);
+          }
         }}
       />
       {notice && (

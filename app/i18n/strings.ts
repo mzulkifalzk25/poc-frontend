@@ -221,6 +221,24 @@ export const en = {
       clear: "Clear bill",
     },
   },
+  search: {
+    label: "Search product",
+    placeholder: "Type a product name or barcode",
+    close: "Esc to close",
+    findItem: "Find item",
+    matches: (total: number, query: string) =>
+      total === 1
+        ? `1 match for "${query}"`
+        : `${count(total)} matches for "${query}"`,
+    noMatches: (query: string) => `No products match "${query}".`,
+    typeToSearch: "Type at least 2 letters to search.",
+    hint: "Use the up and down keys, then press Enter to add.",
+    unknownBarcode: (barcode: string) =>
+      `Barcode ${barcode} is not in the catalogue. Search by name, or ask the owner to add it.`,
+    inStock: (qty: string) => `In stock ${qty}`,
+    out: "Out",
+    results: "Search results",
+  },
   posNav: {
     returns: "Returns",
     held: "Held bills",

@@ -57,6 +57,12 @@ async function seedCatalogue() {
       price: "150.00",
       categoryId: 7,
     }),
+    productRow(4, {
+      name: "Milk Powder 400g",
+      barcode: "8961011300121",
+      price: "980.00",
+      categoryId: 2,
+    }),
   ]);
 }
 
@@ -145,14 +151,15 @@ describe("Billing desk: scanning", () => {
     expect(screen.getByText("Ready for the next customer")).toBeInTheDocument();
   });
 
-  it("warns about a barcode that is not in the catalogue", async () => {
+  it("opens search with a banner for a barcode that is not in the catalogue", async () => {
     const { user, scanBox } = await openDesk();
 
     await user.type(scanBox, "8961099900123{Enter}");
 
-    expect(
-      await screen.findByText("Barcode 8961099900123 is not in the catalogue."),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Barcode 8961099900123 is not in the catalogue. Search by name, or ask the owner to add it.",
+    );
+    expect(screen.getByLabelText("Search product")).toHaveFocus();
     expect(rows()).toHaveLength(0);
   });
 
@@ -326,6 +333,63 @@ describe("Billing desk: keyboard", () => {
 
     await user.keyboard("{F2}");
 
+    expect(scanBox).toHaveFocus();
+  });
+});
+
+describe("Billing desk: search", () => {
+  it("searches by name as soon as a letter is typed in the scan box", async () => {
+    const { user, scanBox } = await openDesk();
+
+    await user.type(scanBox, "mil");
+
+    const search = screen.getByLabelText("Search product");
+    expect(search).toHaveValue("mil");
+    expect(await screen.findByText('2 matches for "mil"')).toBeInTheDocument();
+    const options = screen.getAllByRole("option");
+    expect(options[0]).toHaveTextContent("Fresh Milk 1L");
+    expect(options[0]).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("moves with the arrow keys and adds with Enter, then closes", async () => {
+    const { user, scanBox } = await openDesk();
+    await user.type(scanBox, "mil");
+    await screen.findByText('2 matches for "mil"');
+
+    await user.keyboard("{ArrowDown}{Enter}");
+
+    expect(
+      await screen.findByLabelText("Quantity of Milk Powder 400g"),
+    ).toHaveValue("1");
+    expect(screen.queryByLabelText("Search product")).not.toBeInTheDocument();
+    expect(scanBox).toHaveFocus();
+  });
+
+  it("adds a result with a click", async () => {
+    const { user } = await openDesk();
+    await user.click(screen.getByRole("button", { name: "Find item" }));
+    expect(
+      screen.getByText("Type at least 2 letters to search."),
+    ).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText("Search product"), "bread");
+    await user.click(await screen.findByRole("option", { name: /Bread Loaf/ }));
+
+    expect(await screen.findByLabelText("Quantity of Bread Loaf")).toHaveValue(
+      "1",
+    );
+  });
+
+  it("closes with Esc and says when nothing matches", async () => {
+    const { user, scanBox } = await openDesk();
+    await user.type(scanBox, "zzz");
+    expect(
+      await screen.findByText('No products match "zzz".'),
+    ).toBeInTheDocument();
+
+    await user.keyboard("{Escape}");
+
+    expect(screen.queryByLabelText("Search product")).not.toBeInTheDocument();
     expect(scanBox).toHaveFocus();
   });
 });

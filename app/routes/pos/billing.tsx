@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useLoaderData } from "react-router";
 
 import { BillActions } from "~/components/pos/bill/BillActions";
@@ -10,16 +10,22 @@ import { receivedPaisa } from "~/components/pos/bill/received";
 import { QuickItems } from "~/components/pos/bill/QuickItems";
 import { ScanBox } from "~/components/pos/bill/ScanBox";
 import { useScanner } from "~/components/pos/bill/useScanner";
+import { SearchOverlay } from "~/components/pos/search/SearchOverlay";
 import { useCounterKeys } from "~/components/pos/useCounterKeys";
 import { useAsyncData } from "~/components/ui/useAsyncData";
 import { billTotals, type ScannedProduct } from "~/domain/bill";
 import { nextBillNumber } from "~/domain/bill-number";
 import { canPay } from "~/domain/payment";
+import { t } from "~/i18n/t";
 import { catalogueStore } from "~/infrastructure/db/catalogue-store";
 import { META_KEYS } from "~/infrastructure/db/meta-keys";
 import { metaStore } from "~/infrastructure/db/meta-store";
 import { getDeviceCounter } from "~/infrastructure/session/device-store";
-import { loadStoreSettings, scanDeps } from "~/infrastructure/sync/scan-deps";
+import {
+  loadStoreSettings,
+  scanDeps,
+  searchDeps,
+} from "~/infrastructure/sync/scan-deps";
 
 const QUICK_TABS = 3;
 const QUICK_TILES = 8;
@@ -34,7 +40,7 @@ export async function clientLoader() {
       taxRate: settings?.taxRate ?? "0.00",
       pricesIncludeTax: settings?.pricesIncludeTax ?? false,
     },
-    tabs: (await catalogueStore.categories()).slice(0, QUICK_TABS),
+    categories: await catalogueStore.categories(),
   };
 }
 
@@ -55,12 +61,36 @@ function useQuickProducts(categoryId: number | null) {
   return state.status === "ready" ? state.data : [];
 }
 
+interface SearchState {
+  query: string;
+  unknownBarcode: string | null;
+}
+
 export default function BillingRoute() {
   const data = useLoaderData<typeof clientLoader>();
   const { state, dispatch } = useCurrentBill();
   const scanner = useScanner(scanDeps);
   const scanRef = useRef<HTMLInputElement>(null);
-  const [tabId, setTabId] = useState(data.tabs[0]?.id ?? null);
+  const tabs = data.categories.slice(0, QUICK_TABS);
+  const tints = useMemo(
+    () =>
+      new Map(data.categories.map((category) => [category.id, category.tint])),
+    [data.categories],
+  );
+  const [tabId, setTabId] = useState(tabs[0]?.id ?? null);
+  const [search, setSearch] = useState<SearchState | null>(null);
+
+  function closeSearch() {
+    setSearch(null);
+    scanRef.current?.focus();
+  }
+
+  async function handleScan(text: string) {
+    const result = await scanner.scan(text);
+    if (result.status === "unknown") {
+      setSearch({ query: "", unknownBarcode: result.barcode });
+    }
+  }
   const quickProducts = useQuickProducts(tabId);
   const totals = billTotals(state.lines, data.taxRule);
   const payable = canPay(
@@ -76,7 +106,11 @@ export default function BillingRoute() {
   }
 
   useCounterKeys({
-    F2: () => scanRef.current?.focus(),
+    F2: () => {
+      setSearch(null);
+      scanRef.current?.focus();
+    },
+    Escape: search ? closeSearch : undefined,
     F9: () => {
       if (payable) {
         pay();
@@ -86,13 +120,39 @@ export default function BillingRoute() {
 
   return (
     <div className="flex h-[calc(100vh-4rem)] min-h-0">
-      <section className="flex min-w-0 flex-grow flex-col gap-4 p-5">
+      <section className="relative flex min-w-0 flex-grow flex-col gap-4 p-5">
+        {search && (
+          <SearchOverlay
+            deps={searchDeps}
+            initialQuery={search.query}
+            unknownBarcode={search.unknownBarcode}
+            tints={tints}
+            onAdd={(hit) => {
+              dispatch({ type: "add", product: hit.product });
+              scanner.added(hit.product.name, hit.product.unitPrice);
+              closeSearch();
+            }}
+            onClose={closeSearch}
+          />
+        )}
         <div className="flex h-[60px] flex-shrink-0 gap-3">
           <ScanBox
             ref={scanRef}
             notice={scanner.notice}
-            onScan={(text) => void scanner.scan(text)}
+            onScan={(text) => void handleScan(text)}
+            onLetters={(text) => {
+              setSearch({ query: text, unknownBarcode: null });
+            }}
           />
+          <button
+            type="button"
+            className="h-[60px] rounded-card border-[1.5px] border-navy bg-white px-5 text-base font-bold text-text transition hover:bg-off-white focus-visible:ring-2 focus-visible:ring-blue focus-visible:outline-none active:bg-border"
+            onClick={() => {
+              setSearch({ query: "", unknownBarcode: null });
+            }}
+          >
+            {t().search.findItem}
+          </button>
         </div>
         <BillTable
           lines={state.lines}
@@ -108,7 +168,7 @@ export default function BillingRoute() {
           }}
         />
         <QuickItems
-          tabs={data.tabs}
+          tabs={tabs}
           selectedId={tabId}
           products={quickProducts}
           onSelect={setTabId}
