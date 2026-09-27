@@ -18,7 +18,6 @@ const oil = {
   barcode: "8961002300022",
   name: "Cooking Oil 1L",
   category: { id: 1, name: "Grocery", tint: "green" },
-  category_id: 1,
   unit: "litre",
   price: "620.00",
   cost: "570.00",

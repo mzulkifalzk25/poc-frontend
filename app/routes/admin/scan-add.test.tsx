@@ -171,7 +171,7 @@ describe("ScanAddRoute", () => {
           ...oil,
           id: 12,
           name: "Wafer Chocolate 40g",
-          category_id: 4,
+          category: { id: 4, name: "Snacks", tint: "pink" },
           low_stock_alert: "10.000",
           is_archived: false,
         });
@@ -308,7 +308,7 @@ describe("ScanAddRoute", () => {
           ...oil,
           id: 20 + created,
           name,
-          category_id: 4,
+          category: { id: 4, name: "Snacks", tint: "pink" },
           low_stock_alert: "10.000",
           is_archived: false,
         });
