@@ -1,7 +1,7 @@
 export const PRODUCT_UNITS = ["pcs", "kg", "litre", "pack"] as const;
 export type ProductUnit = (typeof PRODUCT_UNITS)[number];
 
-export type StockStatus = "in_stock" | "low" | "out";
+export type StockStatus = "in_stock" | "low" | "out" | "negative" | "archived";
 export type StockFilter = "all" | "low" | "out" | "archived";
 
 export interface ProductCategoryRef {

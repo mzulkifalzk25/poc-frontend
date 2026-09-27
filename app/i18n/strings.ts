@@ -591,6 +591,7 @@ export const en = {
       in_stock: "In stock",
       low: "Low",
       out: "Out",
+      negative: "Negative",
       archived: "Archived",
     },
     noCategory: "No category",

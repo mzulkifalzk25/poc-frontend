@@ -71,6 +71,7 @@ describe("ProductsRoute", () => {
         product(1, { name: "Basmati Rice 5kg" }),
         product(2, { stock: "6.000", status: "low" }),
         product(3, { stock: "0.000", status: "out" }),
+        product(4, { stock: "-2.000", status: "negative" }),
       ],
       23,
     );
@@ -86,6 +87,7 @@ describe("ProductsRoute", () => {
     expect(within(row).getByText("In stock")).toBeInTheDocument();
     expect(screen.getByText("Low")).toBeInTheDocument();
     expect(screen.getByText("Out")).toBeInTheDocument();
+    expect(screen.getByText("Negative")).toBeInTheDocument();
     expect(screen.getByText("Showing 1–10 of 23")).toBeInTheDocument();
     expect(
       screen.getByText("23 products across 2 categories"),

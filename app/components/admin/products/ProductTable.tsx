@@ -6,18 +6,18 @@ import {
   formatQuantity,
   productInitials,
   type ProductSummary,
+  type StockStatus,
 } from "~/domain/product";
 import { t } from "~/i18n/t";
 
 import { tintClass } from "../categoryTint";
 import { DataTable, type Column } from "../DataTable";
 
-type BadgeKind = ProductSummary["status"] | "archived";
-
-const badgeClasses: Record<BadgeKind, string> = {
+const badgeClasses: Record<StockStatus, string> = {
   in_stock: "bg-success-bg text-success-text",
   low: "bg-warning-bg text-warning",
   out: "bg-error-bg text-error-text",
+  negative: "bg-error text-white",
   archived: "bg-border text-text-secondary",
 };
 
@@ -76,7 +76,7 @@ function categoryCell(product: ProductSummary) {
 }
 
 function stockCell(product: ProductSummary, archived: boolean) {
-  const kind: BadgeKind = archived ? "archived" : product.status;
+  const kind: StockStatus = archived ? "archived" : product.status;
   return (
     <span className="flex items-center gap-2.5 ps-6">
       <span className="min-w-7 font-mono font-semibold">
