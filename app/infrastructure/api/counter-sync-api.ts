@@ -33,7 +33,7 @@ interface PersonDto {
   unlocked_at: string | null;
 }
 
-interface SettingsDto {
+export interface SettingsDto {
   store_name: string;
   phone: string;
   address: string;

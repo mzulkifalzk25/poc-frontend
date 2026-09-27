@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { listCounters } from "./counter-repository";
+import { counterRepository } from "./counter-repository";
 import { installFakeFetch, jsonResponse } from "./fake-fetch";
 
 const counterTwo = {
@@ -28,13 +28,13 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-describe("listCounters", () => {
+describe("counterRepository", () => {
   it("maps the counters list", async () => {
     installFakeFetch({
       "GET /counters": () => jsonResponse(200, [counterTwo]),
     });
 
-    expect(await listCounters()).toEqual([
+    expect(await counterRepository.list()).toEqual([
       {
         id: 2,
         name: "Counter 2",
@@ -47,6 +47,50 @@ describe("listCounters", () => {
         hasOpenShift: true,
         hasBills: true,
       },
+    ]);
+  });
+});
+
+describe("counterRepository writes", () => {
+  it("creates, issues and revokes codes and deactivates by the contract", async () => {
+    const calls: string[] = [];
+    installFakeFetch({
+      "POST /counters": (body) => {
+        calls.push(`create ${JSON.stringify(body)}`);
+        return jsonResponse(201, { ...counterTwo, id: 4, code: "004" });
+      },
+      "POST /devices/codes": (body) => {
+        calls.push(`code ${JSON.stringify(body)}`);
+        return jsonResponse(201, {
+          code: "K7M4-Q92R",
+          expires_at: "2026-09-19T12:15:00Z",
+        });
+      },
+      "DELETE /devices/codes/4": () => {
+        calls.push("revoke");
+        return jsonResponse(204);
+      },
+      "POST /counters/4/deactivate": () => {
+        calls.push("deactivate");
+        return jsonResponse(204);
+      },
+    });
+
+    await counterRepository.create({ name: "Counter 4", code: "004" });
+    const issued = await counterRepository.generateCode(4);
+    await counterRepository.revokeCode(4);
+    await counterRepository.deactivate(4);
+
+    expect(issued).toEqual({
+      counterId: 4,
+      code: "K7M4-Q92R",
+      expiresAt: "2026-09-19T12:15:00Z",
+    });
+    expect(calls).toEqual([
+      'create {"name":"Counter 4","code":"004"}',
+      'code {"counter_id":4}',
+      "revoke",
+      "deactivate",
     ]);
   });
 });

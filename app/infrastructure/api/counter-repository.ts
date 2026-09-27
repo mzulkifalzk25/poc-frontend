@@ -1,4 +1,5 @@
 import type { Counter, CounterStatus } from "~/domain/counter";
+import type { CounterRepository } from "~/use_cases/manage-counters";
 
 import { apiClient } from "./client";
 
@@ -30,7 +31,22 @@ function toCounter(dto: CounterDto): Counter {
   };
 }
 
-export async function listCounters(): Promise<Counter[]> {
-  const rows = await apiClient.get<CounterDto[]>("/counters");
-  return rows.map(toCounter);
-}
+export const counterRepository: CounterRepository = {
+  list: async () =>
+    (await apiClient.get<CounterDto[]>("/counters")).map(toCounter),
+  create: async (draft) =>
+    toCounter(await apiClient.post<CounterDto>("/counters", draft)),
+  generateCode: async (counterId) => {
+    const issued = await apiClient.post<{ code: string; expires_at: string }>(
+      "/devices/codes",
+      { counter_id: counterId },
+    );
+    return { counterId, code: issued.code, expiresAt: issued.expires_at };
+  },
+  revokeCode: async (counterId) => {
+    await apiClient.delete(`/devices/codes/${String(counterId)}`);
+  },
+  deactivate: async (counterId) => {
+    await apiClient.post(`/counters/${String(counterId)}/deactivate`);
+  },
+};
