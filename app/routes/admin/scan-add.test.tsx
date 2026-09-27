@@ -14,15 +14,15 @@ import ProductsRoute from "./products";
 import ScanAddRoute from "./scan-add";
 
 const categories = [
-  { id: 1, name: "Grocery", tint: "grocery", product_count: 1 },
-  { id: 4, name: "Snacks", tint: "snacks", product_count: 0 },
+  { id: 1, name: "Grocery", tint: "green", product_count: 1 },
+  { id: 4, name: "Snacks", tint: "pink", product_count: 0 },
 ];
 
 const oil = {
   id: 7,
   barcode: "8961002300022",
   name: "Cooking Oil 1L",
-  category: { id: 1, name: "Grocery", tint: "grocery" },
+  category: { id: 1, name: "Grocery", tint: "green" },
   unit: "litre",
   price: "620.00",
   cost: "570.00",

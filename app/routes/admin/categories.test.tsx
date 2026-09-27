@@ -14,13 +14,13 @@ import CategoriesRoute from "./categories";
 const grocery = {
   id: 1,
   name: "Grocery",
-  tint: "grocery",
+  tint: "green",
   product_count: 5120,
 };
 const dairy = {
   id: 2,
   name: "Dairy & eggs",
-  tint: "dairy",
+  tint: "blue",
   product_count: 1240,
 };
 
@@ -107,7 +107,7 @@ describe("CategoriesRoute", () => {
         const saved = {
           id: 9,
           name: "Frozen food",
-          tint: "snacks",
+          tint: "pink",
           product_count: 0,
         };
         list = [grocery, saved];
@@ -130,7 +130,7 @@ describe("CategoriesRoute", () => {
     );
 
     expect(await screen.findByText("Frozen food saved")).toBeInTheDocument();
-    expect(created).toEqual([{ name: "Frozen food", tint: "snacks" }]);
+    expect(created).toEqual([{ name: "Frozen food", tint: "pink" }]);
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(
       await screen.findByRole("heading", { name: "Frozen food" }),
@@ -221,7 +221,7 @@ describe("CategoriesRoute", () => {
 
   it("deletes an empty category after a confirmation", async () => {
     const user = userEvent.setup();
-    const frozen = { id: 5, name: "Frozen", tint: "snacks", product_count: 0 };
+    const frozen = { id: 5, name: "Frozen", tint: "pink", product_count: 0 };
     let list = [grocery, frozen];
     const fetchMock = installFakeFetch({
       "GET /categories": () => jsonResponse(200, list),
@@ -289,7 +289,7 @@ describe("CategoriesRoute", () => {
 
   it("shows the blocked message when the server says it is not empty", async () => {
     const user = userEvent.setup();
-    const stale = { id: 5, name: "Frozen", tint: "snacks", product_count: 0 };
+    const stale = { id: 5, name: "Frozen", tint: "pink", product_count: 0 };
     installFakeFetch({
       "GET /categories": () => jsonResponse(200, [grocery, stale]),
       "DELETE /categories/5": () =>

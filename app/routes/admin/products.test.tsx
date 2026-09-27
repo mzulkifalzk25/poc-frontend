@@ -12,8 +12,8 @@ import {
 import ProductsRoute from "./products";
 
 const categories = [
-  { id: 1, name: "Grocery", tint: "grocery", product_count: 20 },
-  { id: 2, name: "Dairy & eggs", tint: "dairy", product_count: 3 },
+  { id: 1, name: "Grocery", tint: "green", product_count: 20 },
+  { id: 2, name: "Dairy & eggs", tint: "blue", product_count: 3 },
 ];
 
 function product(id: number, overrides: Record<string, unknown> = {}) {
@@ -21,7 +21,7 @@ function product(id: number, overrides: Record<string, unknown> = {}) {
     id,
     barcode: `89610012000${String(id).padStart(2, "0")}`,
     name: `Product ${String(id)}`,
-    category: { id: 1, name: "Grocery", tint: "grocery" },
+    category: { id: 1, name: "Grocery", tint: "green" },
     unit: "pcs",
     price: "1650.00",
     cost: "1480.00",

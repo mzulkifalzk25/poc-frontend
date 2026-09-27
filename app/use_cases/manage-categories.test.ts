@@ -13,7 +13,7 @@ import {
 const saved: Category = {
   id: 8,
   name: "Frozen",
-  tint: "dairy",
+  tint: "blue",
   productCount: 0,
 };
 
@@ -33,13 +33,13 @@ describe("saveCategory", () => {
 
     const outcome = await saveCategory(repo, null, {
       name: "  Frozen   food ",
-      tint: "dairy",
+      tint: "blue",
     });
 
     expect(outcome).toEqual({ status: "done", value: saved });
     expect(repo.create).toHaveBeenCalledWith({
       name: "Frozen food",
-      tint: "dairy",
+      tint: "blue",
     });
     expect(repo.update).not.toHaveBeenCalled();
   });
@@ -47,11 +47,11 @@ describe("saveCategory", () => {
   it("updates an existing category", async () => {
     const repo = fakeRepo();
 
-    await saveCategory(repo, 8, { name: "Frozen", tint: "snacks" });
+    await saveCategory(repo, 8, { name: "Frozen", tint: "pink" });
 
     expect(repo.update).toHaveBeenCalledWith(8, {
       name: "Frozen",
-      tint: "snacks",
+      tint: "pink",
     });
   });
 
@@ -61,7 +61,7 @@ describe("saveCategory", () => {
 
     const outcome = await saveCategory(repo, null, {
       name: "Frozen",
-      tint: "dairy",
+      tint: "blue",
     });
 
     expect(outcome).toEqual({ status: "offline" });

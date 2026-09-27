@@ -50,10 +50,10 @@ async function seedCatalogue() {
     syncState: "open_synced",
   });
   await db.categories.bulkPut([
-    { id: 1, name: "Grocery", tint: "grocery" },
-    { id: 2, name: "Dairy & eggs", tint: "dairy" },
-    { id: 7, name: "Bakery", tint: "bakery" },
-    { id: 9, name: "Household", tint: "household" },
+    { id: 1, name: "Grocery", tint: "green" },
+    { id: 2, name: "Dairy & eggs", tint: "blue" },
+    { id: 7, name: "Bakery", tint: "yellow" },
+    { id: 9, name: "Household", tint: "teal" },
   ]);
   await db.products.bulkPut([
     productRow(1, {
@@ -258,7 +258,7 @@ describe("Billing desk: current bill and quick items", () => {
   });
 
   it("says when a quick item tab has no products", async () => {
-    await db.categories.put({ id: 0, name: "Frozen", tint: "dairy" });
+    await db.categories.put({ id: 0, name: "Frozen", tint: "blue" });
     await openDesk();
 
     expect(

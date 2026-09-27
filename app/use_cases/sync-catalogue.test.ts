@@ -41,7 +41,7 @@ function fakeApi(): CounterSyncApi {
         since === "0"
           ? {
               products: [productRow(1), productRow(2)],
-              categories: [{ id: 1, name: "Grocery", tint: "grocery" }],
+              categories: [{ id: 1, name: "Grocery", tint: "green" }],
               nextSince: "p1",
               hasMore: true,
             }

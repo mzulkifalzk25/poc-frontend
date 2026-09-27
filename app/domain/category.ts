@@ -1,11 +1,11 @@
 export const CATEGORY_TINTS = [
-  "grocery",
-  "dairy",
-  "beverages",
-  "snacks",
-  "personal_care",
-  "household",
-  "bakery",
+  "green",
+  "blue",
+  "orange",
+  "pink",
+  "purple",
+  "teal",
+  "yellow",
 ] as const;
 
 export type CategoryTint = (typeof CATEGORY_TINTS)[number];
