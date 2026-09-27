@@ -11,10 +11,11 @@ interface StaffDto {
   full_name: string;
   initials: string;
   role: StaffRole;
+  email: string | null;
+  username: string | null;
   default_counter_id: number | null;
   is_active: boolean;
   last_active_at: string | null;
-  pin_delay_until: string | null;
 }
 
 function toMember(dto: StaffDto): StaffMember {
@@ -23,10 +24,11 @@ function toMember(dto: StaffDto): StaffMember {
     fullName: dto.full_name,
     initials: dto.initials,
     role: dto.role,
+    email: dto.email,
+    username: dto.username,
     defaultCounterId: dto.default_counter_id,
     isActive: dto.is_active,
     lastActiveAt: dto.last_active_at,
-    pinDelayUntil: dto.pin_delay_until,
   };
 }
 
@@ -34,7 +36,9 @@ function toCreateBody(draft: CashierDraft) {
   return {
     full_name: draft.fullName,
     role: "cashier",
-    pin: draft.pin,
+    email: draft.email || undefined,
+    username: draft.username || undefined,
+    password: draft.password,
     default_counter_id: draft.defaultCounterId,
   };
 }
@@ -56,10 +60,10 @@ export const staffRepository: StaffRepository = {
         is_active: changes.isActive,
       }),
     ),
-  resetPin: async (id) =>
-    (await apiClient.post<{ pin: string }>(`/users/${String(id)}/reset-pin`))
-      .pin,
-  unlock: async (id) => {
-    await apiClient.post(`/users/${String(id)}/unlock`);
-  },
+  resetPassword: async (id) =>
+    (
+      await apiClient.post<{ password: string }>(
+        `/users/${String(id)}/reset-password`,
+      )
+    ).password,
 };

@@ -31,7 +31,6 @@ describe("upload API", () => {
       refreshToken: "",
       userId: 12,
       fullName: "Zainab Khan",
-      offline: true,
     });
     const bodies: unknown[] = [];
     const fetchMock = installFakeFetch({
@@ -69,7 +68,7 @@ describe("upload API", () => {
       uploadApi.sendEvents([
         {
           id: "e1",
-          action: "pin_failure",
+          action: "held_bill_deleted",
           occurred_at: "2026-09-26T10:00:00Z",
         },
       ]),

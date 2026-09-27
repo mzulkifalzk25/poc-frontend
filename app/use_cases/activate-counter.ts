@@ -11,7 +11,6 @@ export interface ActivationResult {
 
 export interface ActivationRepository {
   activate: (code: string) => Promise<ActivationResult>;
-  countCashiers: () => Promise<number>;
 }
 
 export interface ActivateCounterDeps {
@@ -21,7 +20,7 @@ export interface ActivateCounterDeps {
 }
 
 export type ActivateCounterOutcome =
-  | { status: "success"; counter: DeviceCounter; cashierCount: number | null }
+  | { status: "success"; counter: DeviceCounter }
   | { status: "code_invalid" }
   | { status: "code_expired" }
   | { status: "code_used" }
@@ -51,16 +50,6 @@ function toFailure(error: unknown): ActivateCounterOutcome {
   throw error;
 }
 
-async function countCashiersSafely(
-  repo: ActivationRepository,
-): Promise<number | null> {
-  try {
-    return await repo.countCashiers();
-  } catch {
-    return null;
-  }
-}
-
 export async function activateCounter(
   deps: ActivateCounterDeps,
   code: string,
@@ -77,6 +66,5 @@ export async function activateCounter(
     activatedAt: deps.now().toISOString(),
     revokedAt: null,
   });
-  const cashierCount = await countCashiersSafely(deps.repo);
-  return { status: "success", counter: result.counter, cashierCount };
+  return { status: "success", counter: result.counter };
 }

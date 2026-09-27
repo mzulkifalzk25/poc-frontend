@@ -303,14 +303,13 @@ describe("Returns: bill number", () => {
     ).toHaveTextContent("Rs 1,040");
   });
 
-  it("proceeds at today's price when the cashier signed in offline", async () => {
+  it("proceeds at today's price when the bill lookup fails", async () => {
     setSession({
       role: "cashier",
       accessToken: "",
       refreshToken: "",
       userId: 12,
       fullName: "Zainab Khan",
-      offline: true,
     });
     const { user } = await scanOilAndEggs();
 

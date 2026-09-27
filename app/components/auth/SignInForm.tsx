@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import { Input } from "~/components/ui/Input";
 import { t } from "~/i18n/t";
@@ -40,15 +40,17 @@ const lockIcon = (
 function EyeToggle({
   shown,
   onToggle,
+  label,
 }: {
   shown: boolean;
   onToggle: () => void;
+  label: string;
 }) {
   return (
     <button
       type="button"
       onClick={onToggle}
-      aria-label={t().signIn.admin.showPassword}
+      aria-label={label}
       className="flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-[#34445A] hover:bg-border/60 focus-visible:ring-2 focus-visible:ring-blue focus-visible:outline-none active:bg-border"
     >
       {shown ? (
@@ -84,22 +86,43 @@ function EyeToggle({
   );
 }
 
-export interface AdminSignInFormProps {
+interface SignInFormStrings {
+  login: string;
+  loginPlaceholder: string;
+  password: string;
+  passwordPlaceholder: string;
+  showPassword: string;
+  keepSignedIn: string;
+  note: string;
+  submit: string;
+  forgotPassword?: string;
+}
+
+export interface SignInFormProps {
+  idPrefix: string;
+  strings: SignInFormStrings;
   onSubmit: (login: string, password: string, remember: boolean) => void;
   pending: boolean;
   error: string | null;
+  disabled?: boolean;
+  notice?: ReactNode;
+  topSlot?: ReactNode;
 }
 
-export function AdminSignInForm({
+export function SignInForm({
+  idPrefix,
+  strings,
   onSubmit,
   pending,
   error,
-}: AdminSignInFormProps) {
+  disabled,
+  notice,
+  topSlot,
+}: SignInFormProps) {
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
   const [passwordShown, setPasswordShown] = useState(false);
   const [remember, setRemember] = useState(true);
-  const strings = t().signIn.admin;
 
   return (
     <form
@@ -109,19 +132,22 @@ export function AdminSignInForm({
         onSubmit(login, password, remember);
       }}
     >
+      {topSlot}
       <div className="flex flex-col gap-1.5">
         <label
-          htmlFor="admin-login"
+          htmlFor={`${idPrefix}-login`}
           className="text-sm font-semibold text-text"
         >
           {strings.login}
         </label>
         <Input
-          id="admin-login"
+          id={`${idPrefix}-login`}
           type="text"
           placeholder={strings.loginPlaceholder}
+          autoComplete="username"
           leadingIcon={personIcon}
           value={login}
+          disabled={disabled}
           onChange={(event) => {
             setLogin(event.target.value);
           }}
@@ -130,21 +156,25 @@ export function AdminSignInForm({
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center justify-between">
           <label
-            htmlFor="admin-password"
+            htmlFor={`${idPrefix}-password`}
             className="text-sm font-semibold text-text"
           >
             {strings.password}
           </label>
-          <span className="text-[13px] font-semibold text-blue">
-            {strings.forgotPassword}
-          </span>
+          {strings.forgotPassword && (
+            <span className="text-[13px] font-semibold text-blue">
+              {strings.forgotPassword}
+            </span>
+          )}
         </div>
         <Input
-          id="admin-password"
+          id={`${idPrefix}-password`}
           type={passwordShown ? "text" : "password"}
           placeholder={strings.passwordPlaceholder}
+          autoComplete="current-password"
           leadingIcon={lockIcon}
           value={password}
+          disabled={disabled}
           onChange={(event) => {
             setPassword(event.target.value);
           }}
@@ -154,6 +184,7 @@ export function AdminSignInForm({
               onToggle={() => {
                 setPasswordShown((current) => !current);
               }}
+              label={strings.showPassword}
             />
           }
         />
@@ -162,6 +193,7 @@ export function AdminSignInForm({
         <input
           type="checkbox"
           checked={remember}
+          disabled={disabled}
           onChange={(event) => {
             setRemember(event.target.checked);
           }}
@@ -172,6 +204,7 @@ export function AdminSignInForm({
       <p className="text-xs leading-relaxed text-text-secondary">
         {strings.note}
       </p>
+      {notice}
       {error && (
         <p className="rounded-input bg-error-bg px-3 py-2 text-sm text-error-text">
           {error}
@@ -179,7 +212,7 @@ export function AdminSignInForm({
       )}
       <button
         type="submit"
-        disabled={pending || login.trim() === "" || password === ""}
+        disabled={disabled || pending || login.trim() === "" || password === ""}
         className="mt-1 flex h-[50px] items-center justify-center gap-2.5 rounded-input bg-blue text-base font-semibold text-white transition hover:brightness-[.92] focus-visible:ring-2 focus-visible:ring-blue focus-visible:ring-offset-2 focus-visible:outline-none active:brightness-[.85] disabled:cursor-not-allowed disabled:opacity-50"
       >
         {pending ? t().signIn.signingIn : strings.submit}

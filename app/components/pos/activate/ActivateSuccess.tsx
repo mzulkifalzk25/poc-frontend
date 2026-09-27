@@ -9,7 +9,6 @@ import { ArrowIcon, bigButtonClass } from "./shared";
 
 interface ActivateSuccessProps {
   counter: DeviceCounter;
-  cashierCount: number | null;
   sync: FirstSyncState;
   onRetrySync: () => void;
 }
@@ -48,17 +47,8 @@ function catalogueRow(sync: FirstSyncState): { value: string; tone: RowTone } {
   return { value: strings.catalogueDownloading(loaded), tone: "busy" };
 }
 
-function cashierValue(sync: FirstSyncState, cashierCount: number | null) {
-  const strings = t().activate.success;
-  const total = sync.status === "done" ? sync.summary.cashiers : cashierCount;
-  return total === null
-    ? strings.cashiersUnknown
-    : strings.cashiersValue(total);
-}
-
 export function ActivateSuccess({
   counter,
-  cashierCount,
   sync,
   onRetrySync,
 }: ActivateSuccessProps) {
@@ -97,11 +87,6 @@ export function ActivateSuccess({
         </div>
         <div className="flex flex-col gap-2 rounded-xl bg-off-white px-4 py-3.5 text-sm text-ink-soft">
           <StatusRow label={strings.catalogue} {...catalogue} />
-          <StatusRow
-            label={strings.cashiers}
-            value={cashierValue(sync, cashierCount)}
-            tone="done"
-          />
           <StatusRow
             label={strings.offline}
             value={ready ? strings.offlineReady : strings.offlineValue}

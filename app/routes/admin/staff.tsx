@@ -1,8 +1,5 @@
 import { CashierForm } from "~/components/admin/staff/CashierForm";
-import {
-  StaffActionButtons,
-  UnlockControl,
-} from "~/components/admin/staff/StaffActions";
+import { StaffActionButtons } from "~/components/admin/staff/StaffActions";
 import { StaffDialogs } from "~/components/admin/staff/StaffDialogs";
 import { StaffTable } from "~/components/admin/staff/StaffTable";
 import { useStaffActions } from "~/components/admin/staff/useStaffActions";
@@ -94,9 +91,6 @@ export default function StaffRoute() {
               counters={data.counters}
               now={now}
               onManage={editor.edit}
-              statusExtra={(member) => (
-                <UnlockControl member={member} now={now} actions={actions} />
-              )}
             />
           )}
         </div>

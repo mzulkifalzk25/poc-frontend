@@ -1,12 +1,9 @@
-import { pbkdf2Sync } from "node:crypto";
-
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createRoutesStub } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { db } from "~/infrastructure/db/database";
-import { peopleStore } from "~/infrastructure/db/people-store";
 import {
   clearDeviceMeta,
   saveDeviceMeta,
@@ -29,8 +26,6 @@ const Stub = createRoutesStub([
   { path: "/pos/deactivated", Component: () => <div>Deactivated screen</div> },
 ]);
 
-const roster = [{ id: 7, full_name: "Zainab Khan", initials: "ZK" }];
-
 async function activateDevice() {
   await saveDeviceMeta({
     token: "device-token",
@@ -45,23 +40,10 @@ async function renderSignIn() {
   await screen.findByText("Welcome back!");
 }
 
-function mockCashierApi(pinLoginResponse: Response) {
-  vi.stubGlobal(
-    "fetch",
-    vi.fn((url: string) =>
-      Promise.resolve(
-        url.endsWith("/pos/roster")
-          ? jsonResponse(200, roster)
-          : pinLoginResponse,
-      ),
-    ),
-  );
-}
-
-async function submitCashier(name: string, pin: string) {
+async function submitCashier(login: string, password: string) {
   const user = userEvent.setup();
-  await user.type(screen.getByLabelText("Cashier name"), name);
-  await user.type(screen.getByLabelText("PIN"), pin);
+  await user.type(screen.getByLabelText("Email or username"), login);
+  await user.type(screen.getByLabelText("Password"), password);
   await user.click(screen.getByRole("button", { name: /^sign in$/i }));
 }
 
@@ -83,8 +65,8 @@ describe("SignInRoute", () => {
     await renderSignIn();
 
     expect(screen.getByText("Counter")).toBeInTheDocument();
-    expect(screen.getByLabelText("Cashier name")).toBeInTheDocument();
-    expect(screen.getByLabelText("PIN")).toBeInTheDocument();
+    expect(screen.getByLabelText("Email or username")).toBeInTheDocument();
+    expect(screen.getByLabelText("Password")).toBeInTheDocument();
   });
 
   it("switches to the admin form when the admin role card is selected", async () => {
@@ -95,7 +77,7 @@ describe("SignInRoute", () => {
 
     expect(screen.getByLabelText("Email or username")).toBeInTheDocument();
     expect(screen.getByLabelText("Password")).toBeInTheDocument();
-    expect(screen.queryByLabelText("Cashier name")).not.toBeInTheDocument();
+    expect(screen.queryByText("Counter")).not.toBeInTheDocument();
   });
 
   it("marks the selected role card as pressed", async () => {
@@ -139,7 +121,7 @@ describe("SignInRoute", () => {
     expect(getSession()?.role).toBe("owner");
   });
 
-  it("shows an inline error on wrong credentials", async () => {
+  it("shows an inline error on wrong owner credentials", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
@@ -181,66 +163,72 @@ describe("SignInRoute", () => {
     expect(screen.getByRole("button", { name: /^sign in$/i })).toBeDisabled();
   });
 
-  it("signs the cashier in and opens start your shift", async () => {
+  it("signs the cashier in over the network and opens start your shift", async () => {
     await activateDevice();
-    mockCashierApi(
-      jsonResponse(200, {
-        access: "a",
-        refresh: "r",
-        user: { id: 7, full_name: "Zainab Khan" },
+    const bodies: unknown[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((_url: string, init?: RequestInit) => {
+        bodies.push(
+          typeof init?.body === "string" ? JSON.parse(init.body) : null,
+        );
+        return Promise.resolve(
+          jsonResponse(200, {
+            access: "a",
+            refresh: "r",
+            user: { id: 7, full_name: "Zainab Khan" },
+          }),
+        );
       }),
     );
     await renderSignIn();
 
-    await submitCashier(" zainab  KHAN ", "1234");
+    await submitCashier("zainab@example.com", "pw-482134");
 
     expect(await screen.findByText("Start your shift")).toBeInTheDocument();
     expect(getSession()?.role).toBe("cashier");
+    expect(bodies).toEqual([
+      { login: "zainab@example.com", password: "pw-482134" },
+    ]);
   });
 
-  it("says the name was not found without calling pin login", async () => {
+  it("shows a wrong credentials message", async () => {
     await activateDevice();
-    mockCashierApi(jsonResponse(500, {}));
-    await renderSignIn();
-
-    await submitCashier("Nobody Here", "1234");
-
-    expect(
-      await screen.findByText("We could not find that name on this counter."),
-    ).toBeInTheDocument();
-    expect(fetch).toHaveBeenCalledTimes(1);
-  });
-
-  it("shows a wrong pin message", async () => {
-    await activateDevice();
-    mockCashierApi(
-      jsonResponse(401, { error: { code: "invalid_pin", message: "Wrong" } }),
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        jsonResponse(401, {
+          error: { code: "invalid_credentials", message: "Wrong" },
+        }),
+      ),
     );
     await renderSignIn();
 
-    await submitCashier("Zainab Khan", "0000");
+    await submitCashier("zainab@example.com", "wrong-password");
 
     expect(
-      await screen.findByText("Wrong PIN. Try again."),
+      await screen.findByText("Wrong email, username or password."),
     ).toBeInTheDocument();
   });
 
-  it("shows the wait countdown when the pin is throttled", async () => {
+  it("shows the wait countdown when sign-in is throttled", async () => {
     await activateDevice();
-    mockCashierApi(
-      jsonResponse(429, {
-        error: { code: "pin_throttled", message: "Wait" },
-        retry_after: 30,
-      }),
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        jsonResponse(429, {
+          error: { code: "login_throttled", message: "Wait" },
+          retry_after: 30,
+        }),
+      ),
     );
     await renderSignIn();
 
-    await submitCashier("Zainab Khan", "0000");
+    await submitCashier("zainab@example.com", "wrong-password");
 
     expect(
       await screen.findByText("Wait 30 s, then try again."),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText("PIN")).toBeDisabled();
     expect(screen.getByRole("button", { name: /^sign in$/i })).toBeDisabled();
   });
 
@@ -272,35 +260,26 @@ describe("SignInRoute", () => {
     );
     await renderSignIn();
 
-    await submitCashier("Zainab Khan", "1234");
+    await submitCashier("zainab@example.com", "pw-482134");
 
     expect(await screen.findByText("Deactivated screen")).toBeInTheDocument();
   });
 
-  it("signs a cashier in on this PC when the network is down", async () => {
+  it("reports being offline on a network failure", async () => {
     await activateDevice();
-    const hash = pbkdf2Sync("4821", "salt", 1000, 32, "sha256").toString(
-      "base64",
-    );
-    await peopleStore.applyPeople([
-      {
-        id: 7,
-        fullName: "Zainab Khan",
-        initials: "ZK",
-        pinVerifier: `pbkdf2_sha256$1000$salt$${hash}`,
-        active: true,
-        unlockedAt: null,
-      },
-    ]);
     vi.stubGlobal(
       "fetch",
       vi.fn(() => Promise.reject(new TypeError("Failed to fetch"))),
     );
     await renderSignIn();
 
-    await submitCashier("zainab khan", "4821");
+    await submitCashier("zainab@example.com", "pw-482134");
 
-    expect(await screen.findByText("Start your shift")).toBeInTheDocument();
-    expect(getSession()).toMatchObject({ userId: 7, offline: true });
+    expect(
+      await screen.findByText(
+        "You are offline. Check your connection and try again.",
+      ),
+    ).toBeInTheDocument();
+    expect(getSession()).toBeNull();
   });
 });

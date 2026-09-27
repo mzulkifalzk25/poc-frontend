@@ -36,7 +36,6 @@ async function prepareCounter({ synced = true } = {}) {
     refreshToken: "",
     userId: 12,
     fullName: "Zainab Khan",
-    offline: true,
   });
   if (synced) {
     await metaStore.set(META_KEYS.firstSyncDone, true);

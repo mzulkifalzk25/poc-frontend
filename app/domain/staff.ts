@@ -7,15 +7,18 @@ export interface StaffMember {
   fullName: string;
   initials: string;
   role: StaffRole;
+  email: string | null;
+  username: string | null;
   defaultCounterId: number | null;
   isActive: boolean;
   lastActiveAt: string | null;
-  pinDelayUntil: string | null;
 }
 
 export interface CashierDraft {
   fullName: string;
-  pin: string;
+  email: string;
+  username: string;
+  password: string;
   defaultCounterId: number | null;
 }
 
@@ -30,13 +33,6 @@ export function isSignedInNow(member: StaffMember, now: Date): boolean {
   );
 }
 
-export function isPinDelayed(member: StaffMember, now: Date): boolean {
-  return (
-    member.pinDelayUntil !== null &&
-    Date.parse(member.pinDelayUntil) > now.getTime()
-  );
-}
-
 export function staffSummary(members: StaffMember[], now: Date) {
   return {
     owners: members.filter((member) => member.role === "owner").length,
@@ -45,18 +41,21 @@ export function staffSummary(members: StaffMember[], now: Date) {
   };
 }
 
-export type CashierField = "fullName" | "pin";
+export type CashierField = "fullName" | "login" | "password";
 
 export function cashierDraftErrors(
   draft: CashierDraft,
   isNew: boolean,
-): Partial<Record<CashierField, "required" | "pin">> {
-  const errors: Partial<Record<CashierField, "required" | "pin">> = {};
+): Partial<Record<CashierField, "required">> {
+  const errors: Partial<Record<CashierField, "required">> = {};
   if (draft.fullName.trim() === "") {
     errors.fullName = "required";
   }
-  if (isNew && !/^[0-9]{4}$/.test(draft.pin)) {
-    errors.pin = "pin";
+  if (isNew && draft.email.trim() === "" && draft.username.trim() === "") {
+    errors.login = "required";
+  }
+  if (isNew && draft.password.trim() === "") {
+    errors.password = "required";
   }
   return errors;
 }

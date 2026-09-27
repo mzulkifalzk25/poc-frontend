@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { ApiError } from "~/infrastructure/api/errors";
 import type { DeviceMeta } from "~/infrastructure/session/device-store";
@@ -11,7 +11,6 @@ function makeDeps(overrides: Partial<ActivationRepository> = {}) {
   const saved: DeviceMeta[] = [];
   const repo: ActivationRepository = {
     activate: () => Promise.resolve({ deviceToken: "device-1", counter }),
-    countCashiers: () => Promise.resolve(3),
     ...overrides,
   };
   return {
@@ -33,12 +32,12 @@ function apiFailure(status: number, code: string) {
 }
 
 describe("activateCounter", () => {
-  it("saves the device token and counter and counts the cashiers", async () => {
+  it("saves the device token and counter", async () => {
     const { deps, saved } = makeDeps();
 
     const outcome = await activateCounter(deps, "K7M4-Q92R");
 
-    expect(outcome).toEqual({ status: "success", counter, cashierCount: 3 });
+    expect(outcome).toEqual({ status: "success", counter });
     expect(saved).toEqual([
       {
         token: "device-1",
@@ -47,16 +46,6 @@ describe("activateCounter", () => {
         revokedAt: null,
       },
     ]);
-  });
-
-  it("still succeeds when the cashier count cannot be loaded", async () => {
-    const { deps } = makeDeps({
-      countCashiers: () => Promise.reject(new TypeError("Failed to fetch")),
-    });
-
-    const outcome = await activateCounter(deps, "K7M4-Q92R");
-
-    expect(outcome).toEqual({ status: "success", counter, cashierCount: null });
   });
 
   it.each([
@@ -102,24 +91,5 @@ describe("activateCounter", () => {
     const { deps } = makeDeps({ activate: apiFailure(500, "server_error") });
 
     await expect(activateCounter(deps, "K7M4-Q92R")).rejects.toThrow();
-  });
-
-  it("does not count cashiers before the device is saved", async () => {
-    const order: string[] = [];
-    const { deps } = makeDeps({
-      countCashiers: vi.fn(() => {
-        order.push("count");
-        return Promise.resolve(2);
-      }),
-    });
-    const save = deps.saveDevice;
-    deps.saveDevice = (meta) => {
-      order.push("save");
-      return save(meta);
-    };
-
-    await activateCounter(deps, "K7M4-Q92R");
-
-    expect(order).toEqual(["save", "count"]);
   });
 });

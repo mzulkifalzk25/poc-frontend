@@ -8,12 +8,11 @@ const zainab = {
   full_name: "Zainab Khan",
   initials: "ZK",
   role: "cashier",
-  email: null,
+  email: "zainab@example.com",
   username: null,
   default_counter_id: 2,
   is_active: true,
   last_active_at: "2026-09-19T12:46:00Z",
-  pin_delay_until: null,
 };
 
 beforeEach(() => {
@@ -39,10 +38,11 @@ describe("staffRepository", () => {
         fullName: "Zainab Khan",
         initials: "ZK",
         role: "cashier",
+        email: "zainab@example.com",
+        username: null,
         defaultCounterId: 2,
         isActive: true,
         lastActiveAt: "2026-09-19T12:46:00Z",
-        pinDelayUntil: null,
       },
     ]);
     expect(String(fetchMock.mock.calls[0]?.[0])).toContain("page_size=100");
@@ -63,7 +63,9 @@ describe("staffRepository", () => {
 
     await staffRepository.createCashier({
       fullName: "Zainab Khan",
-      pin: "1234",
+      email: "zainab@example.com",
+      username: "",
+      password: "pw-482134",
       defaultCounterId: 2,
     });
     await staffRepository.update(5, { isActive: false });
@@ -72,18 +74,21 @@ describe("staffRepository", () => {
       {
         full_name: "Zainab Khan",
         role: "cashier",
-        pin: "1234",
+        email: "zainab@example.com",
+        username: undefined,
+        password: "pw-482134",
         default_counter_id: 2,
       },
       { is_active: false },
     ]);
   });
 
-  it("returns the new PIN from a reset", async () => {
+  it("returns the new password from a reset", async () => {
     installFakeFetch({
-      "POST /users/5/reset-pin": () => jsonResponse(200, { pin: "4821" }),
+      "POST /users/5/reset-password": () =>
+        jsonResponse(200, { password: "Blue-Kettle-42" }),
     });
 
-    expect(await staffRepository.resetPin(5)).toBe("4821");
+    expect(await staffRepository.resetPassword(5)).toBe("Blue-Kettle-42");
   });
 });

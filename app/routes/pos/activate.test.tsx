@@ -30,20 +30,11 @@ const Stub = createRoutesStub([
 function mockApi(activateResponse: Response | Error) {
   vi.stubGlobal(
     "fetch",
-    vi.fn((url: string) => {
-      if (url.endsWith("/pos/roster")) {
-        return Promise.resolve(
-          jsonResponse(200, [
-            { id: 1, full_name: "Zainab Khan", initials: "ZK" },
-            { id: 2, full_name: "Bilal Raza", initials: "BR" },
-            { id: 3, full_name: "Hina Malik", initials: "HM" },
-          ]),
-        );
-      }
-      return activateResponse instanceof Error
+    vi.fn(() =>
+      activateResponse instanceof Error
         ? Promise.reject(activateResponse)
-        : Promise.resolve(activateResponse);
-    }),
+        : Promise.resolve(activateResponse),
+    ),
   );
 }
 
@@ -91,7 +82,6 @@ describe("ActivateRoute", () => {
     await typeCode("k7m4-q92r");
 
     expect(await screen.findByText("This PC is Counter 3")).toBeInTheDocument();
-    expect(screen.getByText("3 on the sign-in list")).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: /continue to sign in/i }),
     ).toHaveAttribute("href", "/");
@@ -158,7 +148,6 @@ describe("ActivateRoute", () => {
           device_token: "device-1",
           counter: { id: 3, name: "Counter 3", code: "003" },
         }),
-      "GET /pos/roster": () => fakeJson(200, []),
       "GET /products/sync/": () =>
         fakeJson(200, {
           products: [
@@ -186,26 +175,11 @@ describe("ActivateRoute", () => {
           has_more: false,
         }),
       "GET /stock/sync/": () => fakeJson(200, { levels: [], next_since: "s1" }),
-      "GET /pos/people/sync/": () =>
-        fakeJson(200, {
-          roster: [
-            {
-              id: 12,
-              full_name: "Zainab Khan",
-              initials: "ZK",
-              pin_verifier: "pbkdf2_sha256$1$s$h",
-              active: true,
-              unlocked_at: null,
-            },
-          ],
-          next_since: "2026-09-26T10:00:00Z",
-        }),
       "GET /pos/bootstrap": () =>
         fakeJson(200, {
           counter: { id: 3, name: "Counter 3", code: "003" },
           settings: {},
           last_bill_seq: 0,
-          roster: [],
           server_time: "2026-09-26T10:00:00Z",
         }),
     });
@@ -213,7 +187,6 @@ describe("ActivateRoute", () => {
     await typeCode("K7M4Q92R");
 
     expect(await screen.findByText("2 products ready")).toBeInTheDocument();
-    expect(screen.getByText("1 on the sign-in list")).toBeInTheDocument();
     expect(screen.getByText("Ready")).toBeInTheDocument();
   });
 
@@ -225,7 +198,6 @@ describe("ActivateRoute", () => {
           device_token: "device-1",
           counter: { id: 3, name: "Counter 3", code: "003" },
         }),
-      "GET /pos/roster": () => fakeJson(200, []),
       "GET /products/sync/": () => new TypeError("Failed to fetch"),
     });
 

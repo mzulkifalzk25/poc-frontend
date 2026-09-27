@@ -35,7 +35,6 @@ describe("MartDeskDatabase", () => {
       "returns_outbox",
       "shifts",
       "stock",
-      "users",
     ]);
   });
 
