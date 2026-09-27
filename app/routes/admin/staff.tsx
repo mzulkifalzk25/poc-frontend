@@ -1,6 +1,98 @@
-import { PlaceholderPage } from "~/components/ui/PlaceholderPage";
+import { CashierForm } from "~/components/admin/staff/CashierForm";
+import { StaffTable } from "~/components/admin/staff/StaffTable";
+import { useStaffEditor } from "~/components/admin/staff/useStaffEditor";
+import { PageHeader } from "~/components/admin/PageHeader";
+import { Card } from "~/components/ui/Card";
+import {
+  EmptyState,
+  ErrorState,
+  LoadingState,
+} from "~/components/ui/StateBlocks";
+import { useToast } from "~/components/ui/ToastProvider";
+import { useAsyncData } from "~/components/ui/useAsyncData";
+import { staffSummary } from "~/domain/staff";
 import { t } from "~/i18n/t";
+import { listCounters } from "~/infrastructure/api/counter-repository";
+import { staffRepository } from "~/infrastructure/api/staff-repository";
+
+async function loadStaffPage() {
+  const [members, counters] = await Promise.all([
+    staffRepository.list(),
+    listCounters(),
+  ]);
+  return { members, counters };
+}
 
 export default function StaffRoute() {
-  return <PlaceholderPage title={t().adminPages.staff} />;
+  const strings = t().staff;
+  const { showToast } = useToast();
+  const { state, reload } = useAsyncData(loadStaffPage);
+  const editor = useStaffEditor({
+    repo: staffRepository,
+    onSaved: (member, created) => {
+      showToast(
+        created
+          ? strings.created(member.fullName)
+          : strings.saved(member.fullName),
+      );
+      reload();
+    },
+  });
+  const now = new Date();
+  const data = state.status === "ready" ? state.data : null;
+  const summary = data ? staffSummary(data.members, now) : null;
+
+  return (
+    <div className="flex max-w-[1136px] flex-col gap-5">
+      <PageHeader
+        title={strings.title}
+        subtitle={
+          summary &&
+          strings.subtitle(summary.owners, summary.cashiers, summary.signedIn)
+        }
+      />
+      <div className="grid items-start gap-4 lg:grid-cols-[1fr_380px]">
+        <div className="min-w-0">
+          {state.status === "loading" && (
+            <Card>
+              <LoadingState />
+            </Card>
+          )}
+          {state.status === "error" && (
+            <Card>
+              <ErrorState onRetry={reload} />
+            </Card>
+          )}
+          {data && data.members.length === 0 && (
+            <Card>
+              <EmptyState
+                title={strings.empty.title}
+                hint={strings.empty.hint}
+              />
+            </Card>
+          )}
+          {data && data.members.length > 0 && (
+            <StaffTable
+              members={data.members}
+              counters={data.counters}
+              now={now}
+              onManage={editor.edit}
+            />
+          )}
+        </div>
+        <CashierForm
+          key={editor.formKey}
+          member={editor.member}
+          counters={data?.counters ?? []}
+          pending={editor.pending}
+          error={editor.error}
+          fieldErrors={editor.fieldErrors}
+          onSubmit={(draft) => void editor.submit(draft)}
+          onCancel={() => {
+            editor.edit(null);
+          }}
+        />
+      </div>
+    </div>
+  );
 }

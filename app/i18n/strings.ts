@@ -503,6 +503,57 @@ export const en = {
       failed: "Could not save. Try again.",
     },
   },
+  staff: {
+    title: "Staff",
+    subtitle: (owners: number, cashiers: number, signedIn: number) =>
+      `${count(owners)} ${owners === 1 ? "owner" : "owners"} · ${count(cashiers)} ${cashiers === 1 ? "cashier" : "cashiers"} · ${count(signedIn)} signed in now`,
+    tableLabel: "Staff",
+    columns: {
+      name: "Name",
+      role: "Role",
+      counter: "Default counter",
+      lastActive: "Last active",
+      status: "Status",
+    },
+    allCounters: "All counters",
+    noCounter: "Any counter",
+    lastActive: {
+      now: "Now",
+      never: "Never",
+      minutes: (minutes: number) => `${count(minutes)} min ago`,
+      hours: (hours: number) => `${count(hours)} h ago`,
+      yesterday: "Yesterday",
+      days: (days: number) => `${count(days)} days ago`,
+    },
+    status: {
+      active: "Active",
+      deactivated: "Deactivated",
+    },
+    manage: "Manage",
+    manageName: (name: string) => `Manage ${name}`,
+    empty: {
+      title: "No staff yet",
+      hint: "Add a cashier to let them sign in at the counter.",
+    },
+    form: {
+      addTitle: "Add cashier",
+      editTitle: "Edit cashier",
+      hint: "Cashiers sign in with a 4-digit PIN at the counter.",
+      editHint:
+        "Change the name or default counter. Use Reset PIN for a new PIN.",
+      fullName: "Full name",
+      fullNamePlaceholder: "e.g. Ali Hassan",
+      pin: "PIN",
+      defaultCounter: "Default counter",
+      noDefault: "No default",
+      create: "Create cashier",
+      save: "Save changes",
+      nameRequired: "Enter the cashier's full name.",
+      pinRule: "The PIN is 4 digits.",
+    },
+    created: (name: string) => `${name} added`,
+    saved: (name: string) => `${name} saved`,
+  },
   categories: {
     title: "Categories",
     subtitle: (categories: number, products: number) =>
