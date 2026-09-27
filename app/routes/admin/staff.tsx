@@ -1,5 +1,11 @@
 import { CashierForm } from "~/components/admin/staff/CashierForm";
+import {
+  StaffActionButtons,
+  UnlockControl,
+} from "~/components/admin/staff/StaffActions";
+import { StaffDialogs } from "~/components/admin/staff/StaffDialogs";
 import { StaffTable } from "~/components/admin/staff/StaffTable";
+import { useStaffActions } from "~/components/admin/staff/useStaffActions";
 import { useStaffEditor } from "~/components/admin/staff/useStaffEditor";
 import { PageHeader } from "~/components/admin/PageHeader";
 import { Card } from "~/components/ui/Card";
@@ -36,6 +42,17 @@ export default function StaffRoute() {
           : strings.saved(member.fullName),
       );
       reload();
+    },
+  });
+  const actions = useStaffActions({
+    repo: staffRepository,
+    onChanged: (message) => {
+      showToast(message);
+      editor.edit(null);
+      reload();
+    },
+    onFailed: (message) => {
+      showToast(message, "error");
     },
   });
   const now = new Date();
@@ -77,6 +94,9 @@ export default function StaffRoute() {
               counters={data.counters}
               now={now}
               onManage={editor.edit}
+              statusExtra={(member) => (
+                <UnlockControl member={member} now={now} actions={actions} />
+              )}
             />
           )}
         </div>
@@ -91,8 +111,14 @@ export default function StaffRoute() {
           onCancel={() => {
             editor.edit(null);
           }}
+          extraActions={
+            editor.member && (
+              <StaffActionButtons member={editor.member} actions={actions} />
+            )
+          }
         />
       </div>
+      <StaffDialogs actions={actions} />
     </div>
   );
 }

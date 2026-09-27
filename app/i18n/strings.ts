@@ -553,6 +553,34 @@ export const en = {
     },
     created: (name: string) => `${name} added`,
     saved: (name: string) => `${name} saved`,
+    actions: {
+      resetPin: "Reset PIN",
+      deactivate: "Deactivate",
+      reactivate: "Reactivate",
+      pinDelayed: "PIN delayed",
+      unlock: "Unlock",
+      unlockName: (name: string) => `Unlock ${name}`,
+    },
+    resetConfirm: {
+      title: (name: string) => `Reset ${name}'s PIN?`,
+      body: "MartDesk makes a new 4-digit PIN. The old PIN stops working on every counter within a minute.",
+      confirm: "Reset PIN",
+    },
+    newPin: {
+      title: "New PIN",
+      body: (name: string) =>
+        `Give this PIN to ${name}. It is shown only once and is not saved anywhere you can see it again.`,
+      label: "New PIN",
+      done: "Done",
+    },
+    deactivateConfirm: {
+      title: (name: string) => `Deactivate ${name}?`,
+      body: "They can no longer sign in at any counter. Their sales and refunds stay in the reports.",
+      confirm: "Deactivate",
+    },
+    deactivated: (name: string) => `${name} deactivated`,
+    reactivated: (name: string) => `${name} can sign in again`,
+    unlocked: (name: string) => `${name} can try the PIN again`,
   },
   categories: {
     title: "Categories",

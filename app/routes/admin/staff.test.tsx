@@ -194,4 +194,127 @@ describe("StaffRoute", () => {
     expect(bodies).toEqual([{ full_name: "Zainab K", default_counter_id: 2 }]);
     expect(screen.getByText("Add cashier")).toBeInTheDocument();
   });
+
+  it("resets a PIN after a confirmation and shows the new PIN once", async () => {
+    install({
+      "POST /users/2/reset-pin": () => jsonResponse(200, { pin: "4821" }),
+    });
+    const user = await openPage();
+
+    await user.click(
+      screen.getByRole("button", { name: "Manage Zainab Khan" }),
+    );
+    await user.click(screen.getByRole("button", { name: "Reset PIN" }));
+    const confirm = screen.getByRole("dialog", {
+      name: "Reset Zainab Khan's PIN?",
+    });
+    await user.click(
+      within(confirm).getByRole("button", { name: "Reset PIN" }),
+    );
+
+    const shown = await screen.findByRole("dialog", { name: "New PIN" });
+    expect(within(shown).getByLabelText("New PIN")).toHaveTextContent("4821");
+    await user.click(within(shown).getByRole("button", { name: "Done" }));
+    expect(screen.queryByText("4821")).not.toBeInTheDocument();
+  });
+
+  it("deactivates a cashier after a confirmation", async () => {
+    const bodies: unknown[] = [];
+    install({
+      "PATCH /users/2": (body) => {
+        bodies.push(body);
+        return jsonResponse(200, { ...zainab, is_active: false });
+      },
+    });
+    const user = await openPage();
+
+    await user.click(
+      screen.getByRole("button", { name: "Manage Zainab Khan" }),
+    );
+    await user.click(screen.getByRole("button", { name: "Deactivate" }));
+    const confirm = screen.getByRole("dialog", {
+      name: "Deactivate Zainab Khan?",
+    });
+    await user.click(
+      within(confirm).getByRole("button", { name: "Deactivate" }),
+    );
+
+    expect(
+      await screen.findByText("Zainab Khan deactivated"),
+    ).toBeInTheDocument();
+    expect(bodies).toEqual([{ is_active: false }]);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("reactivates a deactivated cashier in one step", async () => {
+    const bodies: unknown[] = [];
+    install({
+      "PATCH /users/3": (body) => {
+        bodies.push(body);
+        return jsonResponse(200, { ...usman, is_active: true });
+      },
+    });
+    const user = await openPage();
+
+    await user.click(
+      screen.getByRole("button", { name: "Manage Usman Tariq" }),
+    );
+    await user.click(screen.getByRole("button", { name: "Reactivate" }));
+
+    expect(
+      await screen.findByText("Usman Tariq can sign in again"),
+    ).toBeInTheDocument();
+    expect(bodies).toEqual([{ is_active: true }]);
+  });
+
+  it("unlocks a cashier whose PIN delay is running", async () => {
+    const delayed = {
+      ...zainab,
+      pin_delay_until: new Date(Date.now() + 60_000).toISOString(),
+    };
+    const calls: string[] = [];
+    installFakeFetch({
+      "GET /users": () =>
+        jsonResponse(200, { count: 2, results: [sana, delayed] }),
+      "GET /counters": () => jsonResponse(200, counters),
+      "POST /users/2/unlock": () => {
+        calls.push("unlock");
+        return jsonResponse(204);
+      },
+    });
+    const user = await openPage();
+
+    expect(screen.getByText("PIN delayed")).toBeInTheDocument();
+    await user.click(
+      screen.getByRole("button", { name: "Unlock Zainab Khan" }),
+    );
+
+    expect(
+      await screen.findByText("Zainab Khan can try the PIN again"),
+    ).toBeInTheDocument();
+    expect(calls).toEqual(["unlock"]);
+  });
+
+  it("shows a failed unlock as an error message", async () => {
+    const delayed = {
+      ...zainab,
+      pin_delay_until: new Date(Date.now() + 60_000).toISOString(),
+    };
+    installFakeFetch({
+      "GET /users": () => jsonResponse(200, { count: 1, results: [delayed] }),
+      "GET /counters": () => jsonResponse(200, counters),
+      "POST /users/2/unlock": () => new TypeError("Failed to fetch"),
+    });
+    const user = await openPage();
+
+    await user.click(
+      screen.getByRole("button", { name: "Unlock Zainab Khan" }),
+    );
+
+    expect(
+      await screen.findByText(
+        "You are offline. Check your connection and try again.",
+      ),
+    ).toBeInTheDocument();
+  });
 });
