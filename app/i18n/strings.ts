@@ -489,6 +489,7 @@ export const en = {
       title: "Something went wrong",
       hint: "We could not load this. Check your connection and try again.",
       retry: "Try again",
+      unknown: "Unknown error",
     },
   },
   admin: {

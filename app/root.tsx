@@ -9,6 +9,7 @@ import {
   useNavigate,
 } from "react-router";
 
+import { t } from "~/i18n/t";
 import { configureApiClient } from "~/infrastructure/api/client";
 import {
   installDeviceRevokedHandler,
@@ -69,15 +70,16 @@ export default function App() {
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  const strings = t().states.error;
   const message = isRouteErrorResponse(error)
     ? `${String(error.status)} ${error.statusText}`
     : error instanceof Error
       ? error.message
-      : "Unknown error";
+      : strings.unknown;
 
   return (
     <main className="p-8">
-      <h1 className="text-xl font-semibold">Something went wrong</h1>
+      <h1 className="text-xl font-semibold">{strings.title}</h1>
       <p className="text-gray-600">{message}</p>
     </main>
   );
