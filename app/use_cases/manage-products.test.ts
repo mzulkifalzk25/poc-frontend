@@ -13,7 +13,7 @@ const detail: ProductDetail = {
   id: 7,
   barcode: "8961002300022",
   name: "Cooking Oil 1L",
-  category: { id: 1, name: "Grocery", tint: "grocery" },
+  category: { id: 1, name: "Grocery", tint: "green" },
   categoryId: 1,
   unit: "litre",
   price: "620.00",

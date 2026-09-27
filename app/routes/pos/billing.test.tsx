@@ -50,10 +50,10 @@ async function seedCatalogue() {
     syncState: "open_synced",
   });
   await db.categories.bulkPut([
-    { id: 1, name: "Grocery", tint: "grocery" },
-    { id: 2, name: "Dairy & eggs", tint: "dairy" },
-    { id: 7, name: "Bakery", tint: "bakery" },
-    { id: 9, name: "Household", tint: "household" },
+    { id: 1, name: "Grocery", tint: "green" },
+    { id: 2, name: "Dairy & eggs", tint: "blue" },
+    { id: 7, name: "Bakery", tint: "yellow" },
+    { id: 9, name: "Household", tint: "teal" },
   ]);
   await db.products.bulkPut([
     productRow(1, {
@@ -258,7 +258,7 @@ describe("Billing desk: current bill and quick items", () => {
   });
 
   it("says when a quick item tab has no products", async () => {
-    await db.categories.put({ id: 0, name: "Frozen", tint: "dairy" });
+    await db.categories.put({ id: 0, name: "Frozen", tint: "blue" });
     await openDesk();
 
     expect(
@@ -441,6 +441,21 @@ describe("Billing desk: search", () => {
     const options = screen.getAllByRole("option");
     expect(options[0]).toHaveTextContent("Fresh Milk 1L");
     expect(options[0]).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("shows low stock when a product is at or under its alert level", async () => {
+    await db.products.update(1, { lowStockAlert: "10.000" });
+    await db.stock.bulkPut([
+      { productId: 1, qty: "6.000" },
+      { productId: 4, qty: "40.000" },
+    ]);
+    const { user, scanBox } = await openDesk();
+
+    await user.type(scanBox, "mil");
+
+    const options = await screen.findAllByRole("option");
+    expect(options[0]).toHaveTextContent("Low 6");
+    expect(options[1]).toHaveTextContent("In stock 40");
   });
 
   it("moves with the arrow keys and adds with Enter, then closes", async () => {

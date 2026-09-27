@@ -73,12 +73,12 @@ describe("catalogue store", () => {
   it("stores categories and stock levels", async () => {
     const store = await seeded();
     await store.applyCategories([
-      { id: 2, name: "Dairy & eggs", tint: "dairy" },
+      { id: 2, name: "Dairy & eggs", tint: "blue" },
     ]);
     await store.applyStock([{ productId: 1, qty: "-2.000" }]);
 
     await expect(store.categories()).resolves.toEqual([
-      { id: 2, name: "Dairy & eggs", tint: "dairy" },
+      { id: 2, name: "Dairy & eggs", tint: "blue" },
     ]);
     await expect(store.getStock(1)).resolves.toBe("-2.000");
     await expect(store.getStock(3)).resolves.toBeNull();

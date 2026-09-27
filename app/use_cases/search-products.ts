@@ -6,6 +6,7 @@ export interface SearchHit {
   product: ScannedProduct;
   categoryId: number | null;
   stock: string | null;
+  lowStockAlert: string | null;
 }
 
 export interface SearchDeps {
@@ -19,6 +20,7 @@ export interface SearchDeps {
       name: string;
       price: string;
       categoryId: number | null;
+      lowStockAlert?: string;
     }[];
     total: number;
   }>;
@@ -46,6 +48,7 @@ export async function searchProducts(
       },
       categoryId: row.categoryId,
       stock: await deps.getStock(row.id),
+      lowStockAlert: row.lowStockAlert ?? null,
     })),
   );
   return { hits, total: found.total };

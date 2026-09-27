@@ -15,8 +15,8 @@ function category(id: number, tint: string, productCount = 0): Category {
 
 describe("category rules", () => {
   it("knows the seven design tints", () => {
-    expect(isCategoryTint("personal_care")).toBe(true);
-    expect(isCategoryTint("purple")).toBe(false);
+    expect(isCategoryTint("purple")).toBe(true);
+    expect(isCategoryTint("grocery")).toBe(false);
   });
 
   it("uses the first letter of the name as the tile letter", () => {
@@ -26,10 +26,7 @@ describe("category rules", () => {
 
   it("adds up the products of every category", () => {
     expect(
-      totalProductCount([
-        category(1, "grocery", 5120),
-        category(2, "dairy", 7),
-      ]),
+      totalProductCount([category(1, "green", 5120), category(2, "blue", 7)]),
     ).toBe(5127);
     expect(totalProductCount([])).toBe(0);
   });
@@ -39,22 +36,22 @@ describe("category rules", () => {
   });
 
   it("suggests the first tint no category uses yet", () => {
-    expect(nextUnusedTint([category(1, "grocery"), category(2, "dairy")])).toBe(
-      "beverages",
+    expect(nextUnusedTint([category(1, "green"), category(2, "blue")])).toBe(
+      "orange",
     );
   });
 
   it("starts over when every tint is taken", () => {
     const all = [
-      "grocery",
-      "dairy",
-      "beverages",
-      "snacks",
-      "personal_care",
-      "household",
-      "bakery",
+      "green",
+      "blue",
+      "orange",
+      "pink",
+      "purple",
+      "teal",
+      "yellow",
     ].map((tint, index) => category(index, tint));
 
-    expect(nextUnusedTint(all)).toBe("grocery");
+    expect(nextUnusedTint(all)).toBe("green");
   });
 });

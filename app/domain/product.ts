@@ -1,7 +1,7 @@
 export const PRODUCT_UNITS = ["pcs", "kg", "litre", "pack"] as const;
 export type ProductUnit = (typeof PRODUCT_UNITS)[number];
 
-export type StockStatus = "in_stock" | "low" | "out";
+export type StockStatus = "in_stock" | "low" | "out" | "negative" | "archived";
 export type StockFilter = "all" | "low" | "out" | "archived";
 
 export interface ProductCategoryRef {
@@ -49,6 +49,22 @@ export interface PriceChange {
 
 export function isProductUnit(value: string): value is ProductUnit {
   return (PRODUCT_UNITS as readonly string[]).includes(value);
+}
+
+export type StockLevel = "in_stock" | "low" | "out";
+
+// Same rule as the server: zero or less is out; above zero and at or under the alert is low.
+export function stockLevel(
+  stock: string,
+  lowStockAlert: string | null,
+): StockLevel {
+  const qty = Number(stock);
+  if (qty <= 0) {
+    return "out";
+  }
+  return lowStockAlert !== null && qty <= Number(lowStockAlert)
+    ? "low"
+    : "in_stock";
 }
 
 export function productInitials(name: string): string {

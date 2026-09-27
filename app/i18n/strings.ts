@@ -88,7 +88,6 @@ export const en = {
     },
   },
   activate: {
-    portalTag: "Cashier portal",
     title: "Activate this counter",
     hint: "Enter the code the owner gave you. You only do this once on this PC.",
     codeLabel: "Activation code",
@@ -140,8 +139,6 @@ export const en = {
       internetNote:
         "Needs an internet connection for this step only. After that the counter keeps working offline.",
     },
-    ownerPrompt: "Store owner?",
-    ownerLink: "Sign in to the Admin portal",
   },
   startShift: {
     title: "Start your shift",
@@ -249,6 +246,7 @@ export const en = {
     unknownBarcode: (barcode: string) =>
       `Barcode ${barcode} is not in the catalogue. Search by name, or ask the owner to add it.`,
     inStock: (qty: string) => `In stock ${qty}`,
+    low: (qty: string) => `Low ${qty}`,
     out: "Out",
     results: "Search results",
   },
@@ -527,13 +525,13 @@ export const en = {
       namePlaceholder: "e.g. Frozen food",
       tint: "Colour",
       tintNames: {
-        grocery: "Green",
-        dairy: "Blue",
-        beverages: "Orange",
-        snacks: "Pink",
-        personal_care: "Purple",
-        household: "Teal",
-        bakery: "Yellow",
+        green: "Green",
+        blue: "Blue",
+        orange: "Orange",
+        pink: "Pink",
+        purple: "Purple",
+        teal: "Teal",
+        yellow: "Yellow",
       },
       save: "Save category",
     },
@@ -591,6 +589,7 @@ export const en = {
       in_stock: "In stock",
       low: "Low",
       out: "Out",
+      negative: "Negative",
       archived: "Archived",
     },
     noCategory: "No category",

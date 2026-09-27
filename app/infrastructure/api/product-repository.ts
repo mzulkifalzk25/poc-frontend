@@ -27,7 +27,6 @@ export interface ProductSummaryDto {
 }
 
 interface ProductDetailDto extends ProductSummaryDto {
-  category_id: number | null;
   low_stock_alert: string;
   is_archived: boolean;
 }
@@ -61,7 +60,7 @@ export function toProductSummary(dto: ProductSummaryDto): ProductSummary {
 function toProductDetail(dto: ProductDetailDto): ProductDetail {
   return {
     ...toProductSummary(dto),
-    categoryId: dto.category_id,
+    categoryId: dto.category?.id ?? null,
     lowStockAlert: dto.low_stock_alert,
     isArchived: dto.is_archived,
   };

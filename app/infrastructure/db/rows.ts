@@ -9,6 +9,8 @@ export interface ProductRow {
   categoryId: number | null;
   unit: string;
   price: string;
+  // Missing on rows synced before it was stored; the next change to the product fills it.
+  lowStockAlert?: string;
   isArchived: boolean;
 }
 
