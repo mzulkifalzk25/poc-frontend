@@ -25,6 +25,7 @@ configureApiClient(sessionTokenProvider);
 
 export function links(): Route.LinkDescriptors {
   return [
+    { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
     { rel: "preconnect", href: "https://fonts.googleapis.com" },
     {
       rel: "preconnect",
