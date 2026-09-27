@@ -30,7 +30,6 @@ export async function clientLoader() {
 
 interface Activated {
   counter: DeviceCounter;
-  cashierCount: number | null;
 }
 
 function errorMessage(outcome: ActivateCounterOutcome): string | null {
@@ -77,7 +76,6 @@ export default function ActivateRoute() {
           {activated ? (
             <ActivateSuccess
               counter={activated.counter}
-              cashierCount={activated.cashierCount}
               sync={firstSync.state}
               onRetrySync={firstSync.retry}
             />

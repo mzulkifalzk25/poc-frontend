@@ -4,10 +4,9 @@ import type { StaffMember } from "~/domain/staff";
 import { ApiError } from "~/infrastructure/api/errors";
 
 import {
-  resetCashierPin,
+  resetCashierPassword,
   saveCashier,
   setStaffActive,
-  unlockCashier,
   type StaffRepository,
 } from "./manage-staff";
 
@@ -16,10 +15,11 @@ const zainab: StaffMember = {
   fullName: "Zainab Khan",
   initials: "ZK",
   role: "cashier",
+  email: "zainab@example.com",
+  username: null,
   defaultCounterId: 2,
   isActive: true,
   lastActiveAt: null,
-  pinDelayUntil: null,
 };
 
 function fakeRepo(): StaffRepository {
@@ -27,8 +27,7 @@ function fakeRepo(): StaffRepository {
     list: vi.fn(() => Promise.resolve([zainab])),
     createCashier: vi.fn(() => Promise.resolve(zainab)),
     update: vi.fn(() => Promise.resolve(zainab)),
-    resetPin: vi.fn(() => Promise.resolve("4821")),
-    unlock: vi.fn(() => Promise.resolve()),
+    resetPassword: vi.fn(() => Promise.resolve("Blue-Kettle-42")),
   };
 }
 
@@ -38,24 +37,30 @@ describe("manage staff", () => {
 
     const outcome = await saveCashier(repo, null, {
       fullName: "  Zainab   Khan ",
-      pin: "1234",
+      email: "zainab@example.com",
+      username: "",
+      password: "pw-482134",
       defaultCounterId: 2,
     });
 
     expect(outcome).toEqual({ status: "done", value: zainab });
     expect(repo.createCashier).toHaveBeenCalledWith({
       fullName: "Zainab Khan",
-      pin: "1234",
+      email: "zainab@example.com",
+      username: "",
+      password: "pw-482134",
       defaultCounterId: 2,
     });
   });
 
-  it("edits the name and default counter but never sends a PIN", async () => {
+  it("edits the name and default counter but never sends a password", async () => {
     const repo = fakeRepo();
 
     await saveCashier(repo, 5, {
       fullName: "Zainab K",
-      pin: "9999",
+      email: "zainab@example.com",
+      username: "",
+      password: "new-password",
       defaultCounterId: null,
     });
 
@@ -79,7 +84,9 @@ describe("manage staff", () => {
 
     const outcome = await saveCashier(repo, null, {
       fullName: "Zainab Khan",
-      pin: "1234",
+      email: "zainab@example.com",
+      username: "",
+      password: "pw-482134",
       defaultCounterId: null,
     });
 
@@ -90,15 +97,13 @@ describe("manage staff", () => {
     });
   });
 
-  it("deactivates, resets the PIN and unlocks through the repository", async () => {
+  it("deactivates and resets the password through the repository", async () => {
     const repo = fakeRepo();
 
     await setStaffActive(repo, 5, false);
-    const pin = await resetCashierPin(repo, 5);
-    const unlocked = await unlockCashier(repo, 5);
+    const password = await resetCashierPassword(repo, 5);
 
     expect(repo.update).toHaveBeenCalledWith(5, { isActive: false });
-    expect(pin).toEqual({ status: "done", value: "4821" });
-    expect(unlocked).toEqual({ status: "done", value: undefined });
+    expect(password).toEqual({ status: "done", value: "Blue-Kettle-42" });
   });
 });

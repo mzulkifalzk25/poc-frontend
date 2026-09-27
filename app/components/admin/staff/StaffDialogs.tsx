@@ -16,28 +16,28 @@ export function StaffDialogs({ actions }: StaffDialogsProps) {
     return null;
   }
   const name = dialog.member.fullName;
-  if (dialog.kind === "newPin") {
+  if (dialog.kind === "newPassword") {
     return (
       <Dialog
-        title={strings.newPin.title}
+        title={strings.newPassword.title}
         onClose={actions.close}
         footer={
           <Button autoFocus onClick={actions.close}>
-            {strings.newPin.done}
+            {strings.newPassword.done}
           </Button>
         }
       >
-        <p>{strings.newPin.body(name)}</p>
+        <p>{strings.newPassword.body(name)}</p>
         <p
-          aria-label={strings.newPin.label}
-          className="self-center font-mono text-[40px] font-semibold tracking-[0.3em] text-text"
+          aria-label={strings.newPassword.label}
+          className="self-center font-mono text-2xl font-semibold tracking-wide text-text"
         >
-          {dialog.pin}
+          {dialog.password}
         </p>
       </Dialog>
     );
   }
-  const reset = dialog.kind === "resetPin";
+  const reset = dialog.kind === "resetPassword";
   const copy = reset ? strings.resetConfirm : strings.deactivateConfirm;
   return (
     <ConfirmDialog
@@ -47,7 +47,7 @@ export function StaffDialogs({ actions }: StaffDialogsProps) {
       error={error}
       onConfirm={() =>
         void (reset
-          ? actions.resetPin(dialog.member)
+          ? actions.resetPassword(dialog.member)
           : actions.setActive(dialog.member, false))
       }
       onCancel={actions.close}

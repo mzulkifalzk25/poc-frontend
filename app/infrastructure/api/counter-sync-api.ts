@@ -1,5 +1,4 @@
 import type { StoreSettings } from "~/domain/store-settings";
-import type { PersonUpdate } from "~/infrastructure/db/people-store";
 import type { CategoryRow, ProductRow } from "~/infrastructure/db/rows";
 import type { CounterSyncApi } from "~/use_cases/sync-catalogue";
 
@@ -22,15 +21,6 @@ interface CategorySyncDto {
   id: number;
   name: string;
   tint: string;
-}
-
-interface PersonDto {
-  id: number;
-  full_name: string;
-  initials: string;
-  pin_verifier: string | null;
-  active: boolean;
-  unlocked_at: string | null;
 }
 
 export interface SettingsDto {
@@ -62,17 +52,6 @@ export function toProductRow(dto: ProductSyncDto): ProductRow {
 
 function toCategoryRow(dto: CategorySyncDto): CategoryRow {
   return { id: dto.id, name: dto.name, tint: dto.tint };
-}
-
-function toPerson(dto: PersonDto): PersonUpdate {
-  return {
-    id: dto.id,
-    fullName: dto.full_name,
-    initials: dto.initials,
-    pinVerifier: dto.pin_verifier,
-    active: dto.active,
-    unlockedAt: dto.unlocked_at,
-  };
 }
 
 export function toStoreSettings(dto: SettingsDto): StoreSettings {
@@ -124,16 +103,6 @@ export const counterSyncApi: CounterSyncApi = {
         productId: level.product_id,
         qty: level.qty,
       })),
-      nextSince: String(page.next_since),
-    };
-  },
-  people: async (since) => {
-    const page = await apiClient.get<{
-      roster: PersonDto[];
-      next_since: string | number;
-    }>(`/pos/people/sync/?${query(since)}`, device);
-    return {
-      people: page.roster.map(toPerson),
       nextSince: String(page.next_since),
     };
   },

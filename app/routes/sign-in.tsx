@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { Link, useLoaderData, useNavigate } from "react-router";
 
-import { AdminSignInForm } from "~/components/auth/AdminSignInForm";
-import { CashierSignInForm } from "~/components/auth/CashierSignInForm";
 import { RoleCard } from "~/components/auth/RoleCard";
 import { SignInBrandPanel } from "~/components/auth/SignInBrandPanel";
+import { SignInForm } from "~/components/auth/SignInForm";
 import { useCountdown } from "~/components/auth/useCountdown";
 import { Logo } from "~/components/ui/Logo";
 import { useOnlineStatus } from "~/components/ui/useOnlineStatus";
 import { t } from "~/i18n/t";
+import { cashierAuthRepository } from "~/infrastructure/api/cashier-auth-repository";
 import { ownerAuthRepository } from "~/infrastructure/api/owner-auth-repository";
 import {
   getDeviceCounter,
@@ -16,7 +16,6 @@ import {
   type DeviceCounter,
   type DeviceStatus,
 } from "~/infrastructure/session/device-store";
-import { cashierSignInDeps } from "~/infrastructure/sync/cashier-sign-in-deps";
 import { signInCashier } from "~/use_cases/sign-in-cashier";
 import { signInOwner } from "~/use_cases/sign-in-owner";
 
@@ -100,6 +99,33 @@ function DeviceNotice({ status }: { status: DeviceStatus }) {
   );
 }
 
+function ThrottleNotice({ secondsRemaining }: { secondsRemaining: number }) {
+  const strings = t().signIn.cashier;
+  return (
+    <p className="flex items-center gap-2.5 rounded-input bg-warning-bg px-3.5 py-2.5 text-sm text-warning">
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="flex-shrink-0"
+        aria-hidden="true"
+      >
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 7v5l3 2" />
+      </svg>
+      <span>
+        <b>{strings.throttledTitle}</b>{" "}
+        {strings.throttledWait(secondsRemaining)}
+      </span>
+    </p>
+  );
+}
+
 function counterLabel(status: DeviceStatus, counter: DeviceCounter | null) {
   const strings = t().signIn.cashier;
   if (status === "active" && counter) {
@@ -148,19 +174,26 @@ export default function SignInRoute() {
     }
   }
 
-  async function handleCashierSubmit(name: string, pin: string) {
+  async function handleCashierSubmit(
+    login: string,
+    password: string,
+    remember: boolean,
+  ) {
     setCashierPending(true);
     setCashierError(null);
     throttle.clear();
-    const result = await signInCashier(cashierSignInDeps, name, pin);
+    const result = await signInCashier(
+      cashierAuthRepository,
+      login,
+      password,
+      remember,
+    );
     setCashierPending(false);
     const strings = t().signIn;
     if (result.status === "success") {
       void navigate("/pos/sign-in");
-    } else if (result.status === "name_not_found") {
-      setCashierError(strings.cashier.nameNotFound);
-    } else if (result.status === "invalid_pin") {
-      setCashierError(strings.cashier.wrongPin);
+    } else if (result.status === "invalid_credentials") {
+      setCashierError(strings.cashier.invalidCredentials);
     } else if (result.status === "throttled") {
       throttle.start(result.retryAfterSeconds);
     } else if (result.status === "device_revoked") {
@@ -169,6 +202,9 @@ export default function SignInRoute() {
       setCashierError(strings.offline);
     }
   }
+
+  const cashierDisabled =
+    status !== "active" || throttle.secondsRemaining !== null;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#C9D3E0] via-[#E4E9F0] to-[#B8C4D4] p-6">
@@ -223,21 +259,39 @@ export default function SignInRoute() {
 
           <div className="mt-[18px] flex flex-grow flex-col justify-center">
             {role === "cashier" ? (
-              <CashierSignInForm
-                counterLabel={counterLabel(status, counter)}
-                disabled={status !== "active"}
+              <SignInForm
+                idPrefix="cashier"
+                strings={t().signIn.cashier}
+                disabled={cashierDisabled}
                 notice={
-                  status === "active" ? null : <DeviceNotice status={status} />
+                  status !== "active" ? (
+                    <DeviceNotice status={status} />
+                  ) : throttle.secondsRemaining !== null ? (
+                    <ThrottleNotice
+                      secondsRemaining={throttle.secondsRemaining}
+                    />
+                  ) : null
                 }
-                onSubmit={(name, pin) => {
-                  void handleCashierSubmit(name, pin);
+                topSlot={
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-sm font-semibold text-text">
+                      {t().signIn.cashier.counter}
+                    </span>
+                    <div className="flex h-[46px] items-center rounded-input border border-border bg-border/40 px-3.5 text-sm text-text-secondary">
+                      {counterLabel(status, counter)}
+                    </div>
+                  </div>
+                }
+                onSubmit={(login, password, remember) => {
+                  void handleCashierSubmit(login, password, remember);
                 }}
                 pending={cashierPending}
                 error={cashierError}
-                throttledSecondsRemaining={throttle.secondsRemaining}
               />
             ) : (
-              <AdminSignInForm
+              <SignInForm
+                idPrefix="admin"
+                strings={t().signIn.admin}
                 onSubmit={(login, password, remember) => {
                   void handleAdminSubmit(login, password, remember);
                 }}

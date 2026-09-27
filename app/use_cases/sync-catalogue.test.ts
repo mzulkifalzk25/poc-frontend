@@ -4,7 +4,6 @@ import type { StoreSettings } from "~/domain/store-settings";
 import { createCatalogueStore } from "~/infrastructure/db/catalogue-store";
 import { META_KEYS } from "~/infrastructure/db/meta-keys";
 import { createMetaStore } from "~/infrastructure/db/meta-store";
-import { createPeopleStore } from "~/infrastructure/db/people-store";
 import {
   freshDatabaseFactory,
   productRow,
@@ -59,21 +58,6 @@ function fakeApi(): CounterSyncApi {
         nextSince: "s1",
       }),
     ),
-    people: vi.fn(() =>
-      Promise.resolve({
-        people: [
-          {
-            id: 12,
-            fullName: "Zainab Khan",
-            initials: "ZK",
-            pinVerifier: "pbkdf2_sha256$1$s$h",
-            active: true,
-            unlockedAt: null,
-          },
-        ],
-        nextSince: "2026-09-26T10:00:00Z",
-      }),
-    ),
     bootstrap: vi.fn(() =>
       Promise.resolve({
         settings,
@@ -89,32 +73,29 @@ function syncDeps(api: CounterSyncApi = fakeApi()): SyncDeps {
   return {
     api,
     catalogue: createCatalogueStore(database),
-    people: createPeopleStore(database),
     meta: createMetaStore(database),
     now: () => new Date("2026-09-26T10:00:01Z"),
   };
 }
 
 describe("runFirstSync", () => {
-  it("pages products from 0, then stock, people and settings", async () => {
+  it("pages products from 0, then stock and settings", async () => {
     const deps = syncDeps();
     const progress: SyncProgress[] = [];
 
     const result = await runFirstSync(deps, (step) => progress.push(step));
 
-    expect(result).toEqual({ products: 2, cashiers: 1 });
+    expect(result).toEqual({ products: 2 });
     expect(vi.mocked(deps.api.products).mock.calls).toEqual([["0"], ["p1"]]);
     expect(progress).toEqual([
       { phase: "products", loaded: 2 },
       { phase: "products", loaded: 3 },
       { phase: "stock" },
-      { phase: "people" },
       { phase: "settings" },
     ]);
     await expect(deps.meta.get(META_KEYS.cursors)).resolves.toEqual({
       products: "p2",
       stock: "s1",
-      people: "2026-09-26T10:00:00Z",
     });
     await expect(deps.meta.get(META_KEYS.settings)).resolves.toEqual(settings);
     await expect(isFirstSyncDone(deps.meta)).resolves.toBe(true);
@@ -140,7 +121,7 @@ describe("runFirstSync", () => {
 
   it("is not done when a step fails, so a shift cannot start", async () => {
     const api = fakeApi();
-    api.people = () => Promise.reject(new TypeError("Failed to fetch"));
+    api.stock = () => Promise.reject(new TypeError("Failed to fetch"));
     const deps = syncDeps(api);
 
     await expect(runFirstSync(deps)).rejects.toThrow();
@@ -167,12 +148,9 @@ describe("runDeltaSync", () => {
     await runDeltaSync(deps);
 
     expect(vi.mocked(deps.api.products).mock.calls[0]).toEqual(["p2"]);
-    expect(vi.mocked(deps.api.people).mock.calls.at(-1)).toEqual([
-      "2026-09-26T09:59:50.000Z",
-    ]);
   });
 
-  it("removes archived products and deactivated cashiers locally", async () => {
+  it("removes archived products locally", async () => {
     const api = fakeApi();
     const deps = syncDeps(api);
     await runFirstSync(deps);
@@ -183,23 +161,9 @@ describe("runDeltaSync", () => {
         nextSince: "p3",
         hasMore: false,
       });
-    api.people = () =>
-      Promise.resolve({
-        people: [
-          {
-            id: 12,
-            fullName: "Zainab Khan",
-            initials: "ZK",
-            pinVerifier: null,
-            active: false,
-            unlockedAt: null,
-          },
-        ],
-        nextSince: "2026-09-26T10:01:00Z",
-      });
 
     const result = await runDeltaSync(deps);
 
-    expect(result).toEqual({ products: 1, cashiers: 0 });
+    expect(result).toEqual({ products: 1 });
   });
 });

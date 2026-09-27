@@ -6,7 +6,7 @@ import type { Counter } from "~/domain/counter";
 import type { CashierDraft, StaffMember } from "~/domain/staff";
 import { t } from "~/i18n/t";
 
-import { Field, fieldClass, monoFieldClass } from "../FormField";
+import { Field, fieldClass } from "../FormField";
 
 interface CashierFormProps {
   member: StaffMember | null;
@@ -27,7 +27,9 @@ export function CashierForm(props: CashierFormProps) {
   const { member, counters, pending, error, fieldErrors } = props;
   const strings = t().staff.form;
   const [fullName, setFullName] = useState(member?.fullName ?? "");
-  const [pin, setPin] = useState("");
+  const [email, setEmail] = useState(member?.email ?? "");
+  const [username, setUsername] = useState(member?.username ?? "");
+  const [password, setPassword] = useState("");
   const [counterId, setCounterId] = useState(member?.defaultCounterId ?? null);
 
   return (
@@ -45,7 +47,13 @@ export function CashierForm(props: CashierFormProps) {
         className="flex flex-col gap-4"
         onSubmit={(event) => {
           event.preventDefault();
-          props.onSubmit({ fullName, pin, defaultCounterId: counterId });
+          props.onSubmit({
+            fullName,
+            email,
+            username,
+            password,
+            defaultCounterId: counterId,
+          });
         }}
       >
         <Field
@@ -64,50 +72,86 @@ export function CashierForm(props: CashierFormProps) {
             }}
           />
         </Field>
-        <div className={member ? "" : "grid grid-cols-2 gap-3"}>
-          {!member && (
+        {!member && (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              <Field
+                label={strings.email}
+                htmlFor="cashier-email"
+                error={fieldErrors.email}
+              >
+                <input
+                  id="cashier-email"
+                  type="email"
+                  autoComplete="off"
+                  className={fieldClass}
+                  value={email}
+                  placeholder={strings.emailPlaceholder}
+                  aria-invalid={fieldErrors.email ? true : undefined}
+                  onChange={(event) => {
+                    setEmail(event.target.value);
+                  }}
+                />
+              </Field>
+              <Field
+                label={strings.username}
+                htmlFor="cashier-username"
+                error={fieldErrors.username}
+              >
+                <input
+                  id="cashier-username"
+                  autoComplete="off"
+                  className={fieldClass}
+                  value={username}
+                  placeholder={strings.usernamePlaceholder}
+                  aria-invalid={fieldErrors.username ? true : undefined}
+                  onChange={(event) => {
+                    setUsername(event.target.value);
+                  }}
+                />
+              </Field>
+            </div>
             <Field
-              label={strings.pin}
-              htmlFor="cashier-pin"
-              error={fieldErrors.pin}
+              label={strings.password}
+              htmlFor="cashier-password"
+              error={fieldErrors.password}
             >
               <input
-                id="cashier-pin"
+                id="cashier-password"
                 type="password"
-                inputMode="numeric"
-                maxLength={4}
                 autoComplete="new-password"
-                className={monoFieldClass}
-                value={pin}
-                aria-invalid={fieldErrors.pin ? true : undefined}
+                className={fieldClass}
+                value={password}
+                placeholder={strings.passwordPlaceholder}
+                aria-invalid={fieldErrors.password ? true : undefined}
                 onChange={(event) => {
-                  setPin(event.target.value.replace(/[^0-9]/g, ""));
+                  setPassword(event.target.value);
                 }}
               />
             </Field>
-          )}
-          <Field
-            label={strings.defaultCounter}
-            htmlFor="cashier-counter"
-            error={fieldErrors.default_counter_id}
+          </>
+        )}
+        <Field
+          label={strings.defaultCounter}
+          htmlFor="cashier-counter"
+          error={fieldErrors.default_counter_id}
+        >
+          <select
+            id="cashier-counter"
+            className={fieldClass}
+            value={counterId === null ? "" : String(counterId)}
+            onChange={(event) => {
+              setCounterId(parseCounterId(event.target.value));
+            }}
           >
-            <select
-              id="cashier-counter"
-              className={fieldClass}
-              value={counterId === null ? "" : String(counterId)}
-              onChange={(event) => {
-                setCounterId(parseCounterId(event.target.value));
-              }}
-            >
-              <option value="">{strings.noDefault}</option>
-              {counters.map((counter) => (
-                <option key={counter.id} value={counter.id}>
-                  {counter.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-        </div>
+            <option value="">{strings.noDefault}</option>
+            {counters.map((counter) => (
+              <option key={counter.id} value={counter.id}>
+                {counter.name}
+              </option>
+            ))}
+          </select>
+        </Field>
         {error && (
           <p
             role="alert"

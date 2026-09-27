@@ -11,7 +11,6 @@ import type {
   ReturnUpload,
   ShiftRow,
   StockRow,
-  UserRow,
 } from "./rows";
 
 export interface MetaRow {
@@ -25,7 +24,6 @@ export class MartDeskDatabase extends Dexie {
   products!: EntityTable<ProductRow, "id">;
   categories!: EntityTable<CategoryRow, "id">;
   stock!: EntityTable<StockRow, "productId">;
-  users!: EntityTable<UserRow, "id">;
   bills_outbox!: EntityTable<OutboxRow<BillUpload>, "id">;
   shifts!: EntityTable<ShiftRow, "id">;
   held_bills!: EntityTable<HeldBillRow, "id">;
@@ -40,7 +38,6 @@ export class MartDeskDatabase extends Dexie {
       products: "id, barcode, nameLc, categoryId",
       categories: "id",
       stock: "productId",
-      users: "id, nameKey",
       bills_outbox: "id, status, nextTryAt, createdAt",
       shifts: "id, status, syncState",
       held_bills: "id, shiftId, heldAt",
@@ -48,6 +45,9 @@ export class MartDeskDatabase extends Dexie {
       returns_outbox: "id, status, nextTryAt, createdAt",
       audit_outbox: "id, status, nextTryAt, createdAt",
     });
+    // No more offline cashier roster: sign-in is an email/password call, not
+    // a local lookup, so the table this version added is gone.
+    this.version(3).stores({ users: null });
   }
 }
 

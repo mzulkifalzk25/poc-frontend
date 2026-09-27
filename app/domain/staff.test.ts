@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   cashierDraftErrors,
-  isPinDelayed,
   isSignedInNow,
   staffSummary,
   type StaffMember,
@@ -16,10 +15,11 @@ function member(overrides: Partial<StaffMember> = {}): StaffMember {
     fullName: "Zainab Khan",
     initials: "ZK",
     role: "cashier",
+    email: null,
+    username: null,
     defaultCounterId: 2,
     isActive: true,
     lastActiveAt: null,
-    pinDelayUntil: null,
     ...overrides,
   };
 }
@@ -40,16 +40,6 @@ describe("staff rules", () => {
     expect(isSignedInNow(member(recent), now)).toBe(false);
   });
 
-  it("knows a PIN delay is running only until it ends", () => {
-    expect(
-      isPinDelayed(member({ pinDelayUntil: "2026-09-19T12:47:30Z" }), now),
-    ).toBe(true);
-    expect(
-      isPinDelayed(member({ pinDelayUntil: "2026-09-19T12:46:00Z" }), now),
-    ).toBe(false);
-    expect(isPinDelayed(member(), now)).toBe(false);
-  });
-
   it("sums owners, cashiers and who is signed in now", () => {
     const members = [
       member({ id: 1, role: "owner" }),
@@ -63,16 +53,29 @@ describe("staff rules", () => {
     });
   });
 
-  it("needs a name, and a 4-digit PIN only for a new cashier", () => {
-    const blank = { fullName: " ", pin: "12a", defaultCounterId: null };
+  it("needs a name, and a login and password only for a new cashier", () => {
+    const blank = {
+      fullName: " ",
+      email: "",
+      username: "",
+      password: "",
+      defaultCounterId: null,
+    };
     expect(cashierDraftErrors(blank, true)).toEqual({
       fullName: "required",
-      pin: "pin",
+      login: "required",
+      password: "required",
     });
     expect(cashierDraftErrors(blank, false)).toEqual({ fullName: "required" });
     expect(
       cashierDraftErrors(
-        { fullName: "Ali", pin: "0420", defaultCounterId: 1 },
+        {
+          fullName: "Ali",
+          email: "ali@example.com",
+          username: "",
+          password: "pw-482134",
+          defaultCounterId: 1,
+        },
         true,
       ),
     ).toEqual({});

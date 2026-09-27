@@ -22,8 +22,11 @@ function localErrors(draft: CashierDraft, isNew: boolean) {
   if (errors.fullName) {
     fields.full_name = strings.nameRequired;
   }
-  if (errors.pin) {
-    fields.pin = strings.pinRule;
+  if (errors.login) {
+    fields.email = strings.loginRequired;
+  }
+  if (errors.password) {
+    fields.password = strings.passwordRequired;
   }
   return fields;
 }
@@ -60,6 +63,14 @@ export function useStaffEditor({ repo, onSaved }: EditorOptions) {
       outcome.code === "name_exists"
     ) {
       setFieldErrors({ full_name: outcome.message });
+    } else if (
+      outcome.status === "conflict" &&
+      (outcome.code === "email_exists" || outcome.code === "username_exists")
+    ) {
+      setFieldErrors({
+        [outcome.code === "email_exists" ? "email" : "username"]:
+          outcome.message,
+      });
     } else {
       setError(writeErrorMessage(outcome));
       setFieldErrors(outcome.status === "invalid" ? outcome.fields : {});

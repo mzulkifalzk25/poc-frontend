@@ -12,8 +12,7 @@ export interface StaffRepository {
   list: () => Promise<StaffMember[]>;
   createCashier: (draft: CashierDraft) => Promise<StaffMember>;
   update: (id: number, changes: StaffChanges) => Promise<StaffMember>;
-  resetPin: (id: number) => Promise<string>;
-  unlock: (id: number) => Promise<void>;
+  resetPassword: (id: number) => Promise<string>;
 }
 
 function cleanName(name: string): string {
@@ -44,20 +43,10 @@ export function setStaffActive(
   return runAdminWrite(() => repo.update(id, { isActive }));
 }
 
-// The server makes the new PIN and returns it once; it is never stored here.
-export function resetCashierPin(
+// The server makes the new password and returns it once; it is never stored here.
+export function resetCashierPassword(
   repo: StaffRepository,
   id: number,
 ): Promise<WriteOutcome<string>> {
-  return runAdminWrite(() => repo.resetPin(id));
-}
-
-export function unlockCashier(
-  repo: StaffRepository,
-  id: number,
-): Promise<WriteOutcome<undefined>> {
-  return runAdminWrite(async () => {
-    await repo.unlock(id);
-    return undefined;
-  });
+  return runAdminWrite(() => repo.resetPassword(id));
 }

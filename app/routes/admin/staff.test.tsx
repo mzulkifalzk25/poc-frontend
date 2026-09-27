@@ -29,7 +29,6 @@ function person(id: number, fullName: string, extra: object = {}) {
     default_counter_id: 2,
     is_active: true,
     last_active_at: null,
-    pin_delay_until: null,
     ...extra,
   };
 }
@@ -113,7 +112,8 @@ describe("StaffRoute", () => {
     const user = await openPage();
 
     await user.type(screen.getByLabelText("Full name"), "  Ali   Hassan ");
-    await user.type(screen.getByLabelText("PIN"), "0420");
+    await user.type(screen.getByLabelText("Email"), "ali@example.com");
+    await user.type(screen.getByLabelText("Password"), "pw-482134");
     await user.selectOptions(screen.getByLabelText("Default counter"), "1");
     await user.click(screen.getByRole("button", { name: "Create cashier" }));
 
@@ -122,24 +122,28 @@ describe("StaffRoute", () => {
       {
         full_name: "Ali Hassan",
         role: "cashier",
-        pin: "0420",
+        email: "ali@example.com",
+        username: undefined,
+        password: "pw-482134",
         default_counter_id: 1,
       },
     ]);
     expect(screen.getByLabelText("Full name")).toHaveValue("");
   });
 
-  it("checks the name and PIN before sending anything", async () => {
+  it("checks the name, login and password before sending anything", async () => {
     const fetchMock = install();
     const user = await openPage();
 
-    await user.type(screen.getByLabelText("PIN"), "12");
     await user.click(screen.getByRole("button", { name: "Create cashier" }));
 
     expect(
       screen.getByText("Enter the cashier's full name."),
     ).toBeInTheDocument();
-    expect(screen.getByText("The PIN is 4 digits.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Enter an email or a username."),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Enter a password.")).toBeInTheDocument();
     expect(fetchMock.mock.calls.map((call) => call[1]?.method)).not.toContain(
       "POST",
     );
@@ -160,7 +164,8 @@ describe("StaffRoute", () => {
     const user = await openPage();
 
     await user.type(screen.getByLabelText("Full name"), "Zainab Khan");
-    await user.type(screen.getByLabelText("PIN"), "1234");
+    await user.type(screen.getByLabelText("Email"), "zainab2@example.com");
+    await user.type(screen.getByLabelText("Password"), "pw-482134");
     await user.click(screen.getByRole("button", { name: "Create cashier" }));
 
     expect(await screen.findByText(message)).toBeInTheDocument();
@@ -170,7 +175,7 @@ describe("StaffRoute", () => {
     );
   });
 
-  it("edits a cashier from Manage without asking for a PIN", async () => {
+  it("edits a cashier from Manage without asking for a password", async () => {
     const bodies: unknown[] = [];
     install({
       "PATCH /users/2": (body) => {
@@ -184,7 +189,7 @@ describe("StaffRoute", () => {
       screen.getByRole("button", { name: "Manage Zainab Khan" }),
     );
     expect(screen.getByText("Edit cashier")).toBeInTheDocument();
-    expect(screen.queryByLabelText("PIN")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Password")).not.toBeInTheDocument();
     const name = screen.getByLabelText("Full name");
     await user.clear(name);
     await user.type(name, "Zainab K");
@@ -195,27 +200,30 @@ describe("StaffRoute", () => {
     expect(screen.getByText("Add cashier")).toBeInTheDocument();
   });
 
-  it("resets a PIN after a confirmation and shows the new PIN once", async () => {
+  it("resets a password after a confirmation and shows the new password once", async () => {
     install({
-      "POST /users/2/reset-pin": () => jsonResponse(200, { pin: "4821" }),
+      "POST /users/2/reset-password": () =>
+        jsonResponse(200, { password: "Blue-Kettle-42" }),
     });
     const user = await openPage();
 
     await user.click(
       screen.getByRole("button", { name: "Manage Zainab Khan" }),
     );
-    await user.click(screen.getByRole("button", { name: "Reset PIN" }));
+    await user.click(screen.getByRole("button", { name: "Reset password" }));
     const confirm = screen.getByRole("dialog", {
-      name: "Reset Zainab Khan's PIN?",
+      name: "Reset Zainab Khan's password?",
     });
     await user.click(
-      within(confirm).getByRole("button", { name: "Reset PIN" }),
+      within(confirm).getByRole("button", { name: "Reset password" }),
     );
 
-    const shown = await screen.findByRole("dialog", { name: "New PIN" });
-    expect(within(shown).getByLabelText("New PIN")).toHaveTextContent("4821");
+    const shown = await screen.findByRole("dialog", { name: "New password" });
+    expect(within(shown).getByLabelText("New password")).toHaveTextContent(
+      "Blue-Kettle-42",
+    );
     await user.click(within(shown).getByRole("button", { name: "Done" }));
-    expect(screen.queryByText("4821")).not.toBeInTheDocument();
+    expect(screen.queryByText("Blue-Kettle-42")).not.toBeInTheDocument();
   });
 
   it("deactivates a cashier after a confirmation", async () => {
@@ -265,56 +273,5 @@ describe("StaffRoute", () => {
       await screen.findByText("Usman Tariq can sign in again"),
     ).toBeInTheDocument();
     expect(bodies).toEqual([{ is_active: true }]);
-  });
-
-  it("unlocks a cashier whose PIN delay is running", async () => {
-    const delayed = {
-      ...zainab,
-      pin_delay_until: new Date(Date.now() + 60_000).toISOString(),
-    };
-    const calls: string[] = [];
-    installFakeFetch({
-      "GET /users": () =>
-        jsonResponse(200, { count: 2, results: [sana, delayed] }),
-      "GET /counters": () => jsonResponse(200, counters),
-      "POST /users/2/unlock": () => {
-        calls.push("unlock");
-        return jsonResponse(204);
-      },
-    });
-    const user = await openPage();
-
-    expect(screen.getByText("PIN delayed")).toBeInTheDocument();
-    await user.click(
-      screen.getByRole("button", { name: "Unlock Zainab Khan" }),
-    );
-
-    expect(
-      await screen.findByText("Zainab Khan can try the PIN again"),
-    ).toBeInTheDocument();
-    expect(calls).toEqual(["unlock"]);
-  });
-
-  it("shows a failed unlock as an error message", async () => {
-    const delayed = {
-      ...zainab,
-      pin_delay_until: new Date(Date.now() + 60_000).toISOString(),
-    };
-    installFakeFetch({
-      "GET /users": () => jsonResponse(200, { count: 1, results: [delayed] }),
-      "GET /counters": () => jsonResponse(200, counters),
-      "POST /users/2/unlock": () => new TypeError("Failed to fetch"),
-    });
-    const user = await openPage();
-
-    await user.click(
-      screen.getByRole("button", { name: "Unlock Zainab Khan" }),
-    );
-
-    expect(
-      await screen.findByText(
-        "You are offline. Check your connection and try again.",
-      ),
-    ).toBeInTheDocument();
   });
 });

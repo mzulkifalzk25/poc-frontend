@@ -4,17 +4,16 @@ import type { StaffMember } from "~/domain/staff";
 import { t } from "~/i18n/t";
 import type { WriteOutcome } from "~/use_cases/admin-write";
 import {
-  resetCashierPin,
+  resetCashierPassword,
   setStaffActive,
-  unlockCashier,
   type StaffRepository,
 } from "~/use_cases/manage-staff";
 
 import { writeErrorMessage } from "../writeError";
 
 export type StaffDialog =
-  | { kind: "resetPin"; member: StaffMember }
-  | { kind: "newPin"; member: StaffMember; pin: string }
+  | { kind: "resetPassword"; member: StaffMember }
+  | { kind: "newPassword"; member: StaffMember; password: string }
   | { kind: "deactivate"; member: StaffMember };
 
 interface ActionOptions {
@@ -64,11 +63,11 @@ export function useStaffActions(options: ActionOptions) {
     close: () => {
       open(null);
     },
-    resetPin: (member: StaffMember) =>
+    resetPassword: (member: StaffMember) =>
       run(
-        () => resetCashierPin(repo, member.id),
-        (pin) => {
-          open({ kind: "newPin", member, pin });
+        () => resetCashierPassword(repo, member.id),
+        (password) => {
+          open({ kind: "newPassword", member, password });
         },
       ),
     setActive: (member: StaffMember, isActive: boolean) =>
@@ -80,13 +79,6 @@ export function useStaffActions(options: ActionOptions) {
           onChanged(
             isActive ? strings.reactivated(name) : strings.deactivated(name),
           );
-        },
-      ),
-    unlock: (member: StaffMember) =>
-      run(
-        () => unlockCashier(repo, member.id),
-        () => {
-          onChanged(strings.unlocked(member.fullName));
         },
       ),
   };

@@ -25,15 +25,6 @@ export interface StockRow {
   qty: string;
 }
 
-export interface UserRow {
-  id: number;
-  fullName: string;
-  nameKey: string;
-  initials: string;
-  pinVerifier: string;
-  unlockedAt: string | null;
-}
-
 export type OutboxStatus = "pending" | "rejected";
 
 export interface OutboxRow<P> {
@@ -82,7 +73,7 @@ export interface BillUpload {
 
 export interface AuditEventUpload {
   id: string;
-  action: "pin_failure" | "held_bill_deleted";
+  action: "held_bill_deleted";
   occurred_at: string;
   entity_type?: string;
   entity_id?: string;

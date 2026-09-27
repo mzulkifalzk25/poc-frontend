@@ -27,7 +27,11 @@ function created(ids: string[]): BatchResult[] {
 }
 
 function event(id: string): AuditEventUpload {
-  return { id, action: "pin_failure", occurred_at: "2026-09-26T10:00:00Z" };
+  return {
+    id,
+    action: "held_bill_deleted",
+    occurred_at: "2026-09-26T10:00:00Z",
+  };
 }
 
 function setup(api: Partial<UploadApi> = {}) {

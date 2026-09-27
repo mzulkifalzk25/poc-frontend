@@ -5,11 +5,9 @@ export const META_KEYS = {
   settings: "settings",
   billSeq: "billSeq",
   clockOffsetMs: "clockOffsetMs",
-  pinDelays: "pinDelays",
 } as const;
 
 export interface SyncCursors {
   products: string;
   stock: string;
-  people: string;
 }

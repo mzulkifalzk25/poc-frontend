@@ -4,10 +4,6 @@ import type { CatalogueStore } from "~/infrastructure/db/catalogue-store";
 import { META_KEYS, type SyncCursors } from "~/infrastructure/db/meta-keys";
 import type { MetaStore } from "~/infrastructure/db/meta-store";
 import type {
-  PeopleStore,
-  PersonUpdate,
-} from "~/infrastructure/db/people-store";
-import type {
   CategoryRow,
   ProductRow,
   StockRow,
@@ -23,9 +19,6 @@ export interface ProductPage {
 export interface CounterSyncApi {
   products: (since: string) => Promise<ProductPage>;
   stock: (since: string) => Promise<{ levels: StockRow[]; nextSince: string }>;
-  people: (
-    since: string,
-  ) => Promise<{ people: PersonUpdate[]; nextSince: string }>;
   bootstrap: () => Promise<{
     settings: StoreSettings;
     lastBillSeq: number;
@@ -39,7 +32,6 @@ export interface SyncDeps {
     CatalogueStore,
     "applyProducts" | "applyCategories" | "applyStock" | "countLive"
   >;
-  people: Pick<PeopleStore, "applyPeople" | "list">;
   meta: MetaStore;
   now: () => Date;
 }
@@ -47,18 +39,15 @@ export interface SyncDeps {
 export type SyncProgress =
   | { phase: "products"; loaded: number }
   | { phase: "stock" }
-  | { phase: "people" }
   | { phase: "settings" };
 
 export interface SyncSummary {
   products: number;
-  cashiers: number;
 }
 
 const START: SyncCursors = {
   products: FIRST_CURSOR,
   stock: FIRST_CURSOR,
-  people: FIRST_CURSOR,
 };
 
 async function pullProducts(
@@ -89,7 +78,7 @@ async function pullSettings(deps: SyncDeps) {
   return boot.serverTime;
 }
 
-// Products, then stock, then people, then settings; cursors are saved only at the end.
+// Products, then stock, then settings; cursors are saved only at the end.
 async function pullAll(
   deps: SyncDeps,
   from: SyncCursors,
@@ -99,26 +88,16 @@ async function pullAll(
   onProgress({ phase: "stock" });
   const stock = await deps.api.stock(from.stock);
   await deps.catalogue.applyStock(stock.levels);
-  onProgress({ phase: "people" });
-  const people = await deps.api.people(from.people);
-  await deps.people.applyPeople(people.people);
   onProgress({ phase: "settings" });
   const serverTime = await pullSettings(deps);
-  const cursors: SyncCursors = {
-    products,
-    stock: stock.nextSince,
-    people: people.nextSince,
-  };
+  const cursors: SyncCursors = { products, stock: stock.nextSince };
   await deps.meta.set(META_KEYS.cursors, cursors);
   await deps.meta.set(META_KEYS.lastSyncAt, deps.now().toISOString());
   return serverTime;
 }
 
 async function summary(deps: SyncDeps): Promise<SyncSummary> {
-  return {
-    products: await deps.catalogue.countLive(),
-    cashiers: (await deps.people.list()).length,
-  };
+  return { products: await deps.catalogue.countLive() };
 }
 
 export async function isFirstSyncDone(meta: MetaStore): Promise<boolean> {
@@ -145,7 +124,6 @@ export async function runDeltaSync(deps: SyncDeps): Promise<SyncSummary> {
     {
       products: withOverlap(cursors.products),
       stock: withOverlap(cursors.stock),
-      people: withOverlap(cursors.people),
     },
     () => undefined,
   );

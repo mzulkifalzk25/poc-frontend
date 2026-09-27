@@ -20,10 +20,4 @@ export const activationRepository: ActivationRepository = {
       counter: response.counter,
     };
   },
-  countCashiers: async () => {
-    const roster = await apiClient.get<unknown[]>("/pos/roster", {
-      tokenSource: "device",
-    });
-    return roster.length;
-  },
 };
