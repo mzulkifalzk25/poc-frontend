@@ -88,7 +88,6 @@ export const en = {
     },
   },
   activate: {
-    portalTag: "Cashier portal",
     title: "Activate this counter",
     hint: "Enter the code the owner gave you. You only do this once on this PC.",
     codeLabel: "Activation code",
@@ -140,8 +139,6 @@ export const en = {
       internetNote:
         "Needs an internet connection for this step only. After that the counter keeps working offline.",
     },
-    ownerPrompt: "Store owner?",
-    ownerLink: "Sign in to the Admin portal",
   },
   startShift: {
     title: "Start your shift",
