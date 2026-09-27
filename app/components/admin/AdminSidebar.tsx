@@ -3,11 +3,16 @@ import { NavLink, useNavigate } from "react-router";
 
 import { Logo } from "~/components/ui/Logo";
 import { getInitials } from "~/domain/initials";
+import type { Strings } from "~/i18n/strings";
+import { t } from "~/i18n/t";
 import { setSession } from "~/infrastructure/session/session-store";
 import { useSession } from "~/infrastructure/session/use-session";
 
+type AdminPage = Exclude<keyof Strings["adminPages"], "comingSoon">;
+type NavGroupKey = keyof Strings["adminNav"]["groups"];
+
 interface NavItem {
-  label: string;
+  page: AdminPage;
   to: string;
   end?: boolean;
   icon: ReactNode;
@@ -15,7 +20,7 @@ interface NavItem {
 }
 
 interface NavGroup {
-  label: string;
+  group: NavGroupKey;
   items: NavItem[];
 }
 
@@ -32,10 +37,10 @@ const iconProps = {
 
 const navGroups: NavGroup[] = [
   {
-    label: "Overview",
+    group: "overview",
     items: [
       {
-        label: "Dashboard",
+        page: "dashboard",
         to: "/admin",
         end: true,
         icon: (
@@ -50,10 +55,10 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
-    label: "Catalogue",
+    group: "catalogue",
     items: [
       {
-        label: "Products",
+        page: "products",
         to: "/admin/products",
         icon: (
           <svg {...iconProps}>
@@ -63,7 +68,7 @@ const navGroups: NavGroup[] = [
         ),
       },
       {
-        label: "Categories",
+        page: "categories",
         to: "/admin/categories",
         icon: (
           <svg {...iconProps}>
@@ -77,10 +82,10 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
-    label: "Stock",
+    group: "stock",
     items: [
       {
-        label: "Inventory",
+        page: "inventory",
         to: "/admin/inventory",
         badge: "146",
         icon: (
@@ -91,7 +96,7 @@ const navGroups: NavGroup[] = [
         ),
       },
       {
-        label: "Receive stock",
+        page: "receive",
         to: "/admin/receive",
         icon: (
           <svg {...iconProps}>
@@ -104,10 +109,10 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
-    label: "Sales and insights",
+    group: "salesAndInsights",
     items: [
       {
-        label: "Sales",
+        page: "sales",
         to: "/admin/sales",
         icon: (
           <svg {...iconProps}>
@@ -117,7 +122,7 @@ const navGroups: NavGroup[] = [
         ),
       },
       {
-        label: "Reports",
+        page: "reports",
         to: "/admin/reports",
         icon: (
           <svg {...iconProps}>
@@ -126,7 +131,7 @@ const navGroups: NavGroup[] = [
         ),
       },
       {
-        label: "Money trail",
+        page: "moneyTrail",
         to: "/admin/money-trail",
         icon: (
           <svg {...iconProps}>
@@ -138,10 +143,10 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
-    label: "Manage",
+    group: "manage",
     items: [
       {
-        label: "Staff",
+        page: "staff",
         to: "/admin/staff",
         icon: (
           <svg {...iconProps}>
@@ -152,7 +157,7 @@ const navGroups: NavGroup[] = [
         ),
       },
       {
-        label: "Activity log",
+        page: "activityLog",
         to: "/admin/activity-log",
         icon: (
           <svg {...iconProps}>
@@ -162,7 +167,7 @@ const navGroups: NavGroup[] = [
         ),
       },
       {
-        label: "Settings",
+        page: "settings",
         to: "/admin/settings",
         icon: (
           <svg {...iconProps}>
@@ -180,6 +185,8 @@ const navGroups: NavGroup[] = [
 export function AdminSidebar() {
   const session = useSession();
   const navigate = useNavigate();
+  const strings = t().adminNav;
+  const pages = t().adminPages;
 
   function handleSignOut() {
     setSession(null);
@@ -187,7 +194,7 @@ export function AdminSidebar() {
   }
 
   return (
-    <div className="flex h-screen w-60 flex-shrink-0 flex-col border-r border-blue-mid bg-navy text-white">
+    <div className="flex h-screen w-60 flex-shrink-0 flex-col border-e border-blue-mid bg-navy text-white">
       <div className="flex items-center gap-2.5 px-[18px] pt-[22px] pb-4">
         <Logo variant="gold" size={36} />
         <div className="flex flex-col leading-tight">
@@ -195,7 +202,7 @@ export function AdminSidebar() {
             Mart<span className="text-gold">Desk</span>
           </span>
           <span className="text-[11px] font-semibold tracking-wide text-[#8FA0B5] uppercase">
-            Owner console
+            {strings.console}
           </span>
         </div>
       </div>
@@ -206,18 +213,18 @@ export function AdminSidebar() {
         </div>
         <div className="flex min-w-0 flex-grow flex-col">
           <span className="text-sm font-semibold">Fresh Basket Mart</span>
-          <span className="text-xs text-[#9FB0C4]">Your store</span>
+          <span className="text-xs text-[#9FB0C4]">{strings.yourStore}</span>
         </div>
       </div>
 
       <nav
-        aria-label="Admin navigation"
+        aria-label={strings.label}
         className="flex flex-grow flex-col gap-0.5 px-3.5"
       >
         {navGroups.map((group) => (
-          <div key={group.label}>
+          <div key={group.group}>
             <div className="px-2 pt-3.5 pb-1.5 text-[11px] font-bold tracking-wider text-[#8FA0B5] uppercase">
-              {group.label}
+              {strings.groups[group.group]}
             </div>
             {group.items.map((item) => (
               <NavLink
@@ -243,7 +250,7 @@ export function AdminSidebar() {
                     >
                       {item.icon}
                     </span>
-                    <span className="flex-grow">{item.label}</span>
+                    <span className="flex-grow">{pages[item.page]}</span>
                     {item.badge && (
                       <span className="rounded-pill bg-[#4A3512] px-1.5 py-0.5 font-mono text-[11px] font-semibold text-[#FFD89A]">
                         {item.badge}
@@ -262,16 +269,18 @@ export function AdminSidebar() {
         className="mx-3.5 mt-2.5 flex flex-col gap-2 rounded-card border border-blue-mid-2 bg-[#14355A] px-3.5 py-3"
       >
         <span className="text-[11px] font-bold tracking-wider text-[#F9D27F] uppercase">
-          Today so far
+          {strings.today.title}
         </span>
         <div className="flex items-baseline justify-between">
           <span className="font-heading text-2xl leading-none font-bold">
             Rs 40.1M
           </span>
-          <span className="text-xs text-[#B6C8DA]">37,742 bills</span>
+          <span className="text-xs text-[#B6C8DA]">
+            {strings.today.bills(37742)}
+          </span>
         </div>
         <span className="text-xs text-[#B6C8DA]">
-          Tap to open the dashboard
+          {strings.today.openDashboard}
         </span>
       </NavLink>
 
@@ -281,13 +290,13 @@ export function AdminSidebar() {
         </div>
         <div className="flex flex-grow flex-col">
           <span className="text-sm font-semibold">{session?.fullName}</span>
-          <span className="text-xs text-[#9FB0C4] capitalize">
-            {session?.role}
+          <span className="text-xs text-[#9FB0C4]">
+            {session ? strings.roles[session.role] : ""}
           </span>
         </div>
         <button
           type="button"
-          aria-label="Sign out"
+          aria-label={t().common.signOut}
           onClick={handleSignOut}
           className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#16304F] text-[#B8C4D3] hover:bg-[#1D3D60]"
         >
