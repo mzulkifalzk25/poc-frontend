@@ -2,6 +2,5 @@ node_modules
 build
 .react-router
 coverage
-package-lock.json
-.claude
+pnpm-lock.yaml
 docs/API_CONTRACT.md

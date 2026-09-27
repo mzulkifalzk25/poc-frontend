@@ -10,8 +10,8 @@
     "test:watch": "vitest",
     "lint": "eslint .",
     "typecheck": "pnpm run typegen && tsc --noEmit",
-    "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format": "prettier --write . --ignore-path .gitignore --ignore-path .prettierignore --ignore-path .git/info/exclude",
+    "format:check": "prettier --check . --ignore-path .gitignore --ignore-path .prettierignore --ignore-path .git/info/exclude"
   },
   "dependencies": {
     "@react-router/node": "^7.18.4",
