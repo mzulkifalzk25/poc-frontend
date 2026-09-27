@@ -14,6 +14,7 @@ interface ProductSyncDto {
   category_id: number | null;
   unit: string;
   price: string;
+  low_stock_alert: string;
   is_archived: boolean;
 }
 
@@ -54,6 +55,7 @@ export function toProductRow(dto: ProductSyncDto): ProductRow {
     categoryId: dto.category_id,
     unit: dto.unit,
     price: dto.price,
+    lowStockAlert: dto.low_stock_alert,
     isArchived: dto.is_archived,
   };
 }

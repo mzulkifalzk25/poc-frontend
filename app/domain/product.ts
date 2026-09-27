@@ -51,6 +51,22 @@ export function isProductUnit(value: string): value is ProductUnit {
   return (PRODUCT_UNITS as readonly string[]).includes(value);
 }
 
+export type StockLevel = "in_stock" | "low" | "out";
+
+// Same rule as the server: zero or less is out; above zero and at or under the alert is low.
+export function stockLevel(
+  stock: string,
+  lowStockAlert: string | null,
+): StockLevel {
+  const qty = Number(stock);
+  if (qty <= 0) {
+    return "out";
+  }
+  return lowStockAlert !== null && qty <= Number(lowStockAlert)
+    ? "low"
+    : "in_stock";
+}
+
 export function productInitials(name: string): string {
   return name.trim().substring(0, 2).toUpperCase();
 }

@@ -1,6 +1,11 @@
 import { tintClass } from "~/components/admin/categoryTint";
 import { formatMoney } from "~/domain/money";
-import { formatQuantity, productInitials } from "~/domain/product";
+import {
+  formatQuantity,
+  productInitials,
+  stockLevel,
+  type StockLevel,
+} from "~/domain/product";
 import { t } from "~/i18n/t";
 import type { SearchHit } from "~/use_cases/search-products";
 
@@ -13,17 +18,29 @@ interface SearchResultsProps {
   onAdd: (hit: SearchHit) => void;
 }
 
-function StockBadge({ stock }: { stock: string | null }) {
+const badgeClasses: Record<StockLevel, string> = {
+  in_stock: "bg-[#E1ECF6] text-blue",
+  low: "bg-warning-bg text-warning",
+  out: "bg-error-bg text-error-text",
+};
+
+function StockBadge({ hit }: { hit: SearchHit }) {
   const strings = t().search;
-  if (stock === null) {
+  if (hit.stock === null) {
     return null;
   }
-  const out = Number(stock) <= 0;
+  const level = stockLevel(hit.stock, hit.lowStockAlert);
+  const qty = formatQuantity(hit.stock);
+  const label = {
+    in_stock: strings.inStock(qty),
+    low: strings.low(qty),
+    out: strings.out,
+  }[level];
   return (
     <span
-      className={`rounded-pill px-[9px] py-1 text-xs font-bold ${out ? "bg-error-bg text-error-text" : "bg-[#E1ECF6] text-blue"}`}
+      className={`rounded-pill px-[9px] py-1 text-xs font-bold ${badgeClasses[level]}`}
     >
-      {out ? strings.out : strings.inStock(formatQuantity(stock))}
+      {label}
     </span>
   );
 }
@@ -72,7 +89,7 @@ export function SearchResults({
                 {hit.product.barcode}
               </span>
             </span>
-            <StockBadge stock={hit.stock} />
+            <StockBadge hit={hit} />
             <span className="min-w-20 text-end font-mono text-base font-semibold">
               {formatMoney(hit.product.unitPrice)}
             </span>

@@ -13,6 +13,7 @@ function deps(): SearchDeps {
             name: "Fresh Milk 1L",
             price: "290.00",
             categoryId: 2,
+            lowStockAlert: "10.000",
           },
         ],
         total: 5,
@@ -38,6 +39,7 @@ describe("searchProducts", () => {
           },
           categoryId: 2,
           stock: "120.000",
+          lowStockAlert: "10.000",
         },
       ],
     });

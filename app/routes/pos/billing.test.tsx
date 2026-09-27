@@ -443,6 +443,21 @@ describe("Billing desk: search", () => {
     expect(options[0]).toHaveAttribute("aria-selected", "true");
   });
 
+  it("shows low stock when a product is at or under its alert level", async () => {
+    await db.products.update(1, { lowStockAlert: "10.000" });
+    await db.stock.bulkPut([
+      { productId: 1, qty: "6.000" },
+      { productId: 4, qty: "40.000" },
+    ]);
+    const { user, scanBox } = await openDesk();
+
+    await user.type(scanBox, "mil");
+
+    const options = await screen.findAllByRole("option");
+    expect(options[0]).toHaveTextContent("Low 6");
+    expect(options[1]).toHaveTextContent("In stock 40");
+  });
+
   it("moves with the arrow keys and adds with Enter, then closes", async () => {
     const { user, scanBox } = await openDesk();
     await user.type(scanBox, "mil");

@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { formatQuantity, isProductUnit, productInitials } from "./product";
+import {
+  formatQuantity,
+  isProductUnit,
+  productInitials,
+  stockLevel,
+} from "./product";
 
 describe("product rules", () => {
   it("uses the first two letters as the row tile", () => {
@@ -21,5 +26,20 @@ describe("product rules", () => {
 
   it("rejects a quantity that is not a number", () => {
     expect(() => formatQuantity("n/a")).toThrow();
+  });
+
+  it("marks stock out at zero or below", () => {
+    expect(stockLevel("0.000", "10.000")).toBe("out");
+    expect(stockLevel("-2.000", "10.000")).toBe("out");
+  });
+
+  it("marks stock low above zero and at or under the alert", () => {
+    expect(stockLevel("10.000", "10.000")).toBe("low");
+    expect(stockLevel("10.500", "10.000")).toBe("in_stock");
+  });
+
+  it("never marks stock low without an alert level", () => {
+    expect(stockLevel("1.000", null)).toBe("in_stock");
+    expect(stockLevel("1.000", "0.000")).toBe("in_stock");
   });
 });

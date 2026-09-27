@@ -249,6 +249,7 @@ export const en = {
     unknownBarcode: (barcode: string) =>
       `Barcode ${barcode} is not in the catalogue. Search by name, or ask the owner to add it.`,
     inStock: (qty: string) => `In stock ${qty}`,
+    low: (qty: string) => `Low ${qty}`,
     out: "Out",
     results: "Search results",
   },
