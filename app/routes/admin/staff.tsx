@@ -18,13 +18,13 @@ import { useToast } from "~/components/ui/ToastProvider";
 import { useAsyncData } from "~/components/ui/useAsyncData";
 import { staffSummary } from "~/domain/staff";
 import { t } from "~/i18n/t";
-import { listCounters } from "~/infrastructure/api/counter-repository";
+import { counterRepository } from "~/infrastructure/api/counter-repository";
 import { staffRepository } from "~/infrastructure/api/staff-repository";
 
 async function loadStaffPage() {
   const [members, counters] = await Promise.all([
     staffRepository.list(),
-    listCounters(),
+    counterRepository.list(),
   ]);
   return { members, counters };
 }
