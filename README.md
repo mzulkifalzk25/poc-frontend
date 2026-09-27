@@ -5,7 +5,7 @@ MartDesk cashier and admin web app: React Router 7 in SPA mode (`ssr: false`), T
 ## Setup
 
 ```
-npm install
+pnpm install
 cp .env.example .env
 ```
 
@@ -14,12 +14,12 @@ cp .env.example .env
 ## Commands
 
 ```
-npm run dev              # development server
-npm run test             # vitest (unit and component tests)
-npm run lint             # eslint
-npm run typecheck        # tsc --noEmit
-npm run format:check     # prettier
-npm run build            # production build
+pnpm run dev              # development server
+pnpm run test             # vitest (unit and component tests)
+pnpm run lint             # eslint
+pnpm run typecheck        # tsc --noEmit
+pnpm run format:check     # prettier
+pnpm run build            # production build
 ```
 
 ## Layout
