@@ -30,3 +30,21 @@ export function formatAmount(value: string | number): string {
 export function formatPaisa(paisa: number): string {
   return formatMoney(paisa / 100);
 }
+
+// "Rs 40.1M", "Rs 96.4K" or "Rs 850": the short form big report numbers use.
+export function formatCompactMoney(value: string | number): string {
+  const amount = typeof value === "string" ? parseMoney(value) : value;
+  const abs = Math.abs(amount);
+  const sign = amount < 0 ? "-" : "";
+  if (abs >= 1_000_000) {
+    return `${sign}Rs ${trimZero(abs / 1_000_000)}M`;
+  }
+  if (abs >= 10_000) {
+    return `${sign}Rs ${trimZero(abs / 1_000)}K`;
+  }
+  return formatMoney(amount);
+}
+
+function trimZero(value: number): string {
+  return value.toLocaleString("en-US", { maximumFractionDigits: 1 });
+}
