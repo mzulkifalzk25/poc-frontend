@@ -16,9 +16,9 @@ export function clientLoader() {
 export default function AdminLayout() {
   return (
     <ToastProvider>
-      <div className="flex min-h-screen bg-off-white">
+      <div className="flex h-screen overflow-hidden bg-off-white print:block print:h-auto print:overflow-visible">
         <AdminSidebar />
-        <main className="flex-1 overflow-y-auto p-8">
+        <main className="min-w-0 flex-1 overflow-y-auto p-8 print:overflow-visible">
           <Outlet />
         </main>
       </div>

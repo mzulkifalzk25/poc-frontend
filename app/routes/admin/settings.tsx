@@ -1,3 +1,4 @@
+import { ChangePasswordCard } from "~/components/admin/settings/ChangePasswordCard";
 import { CountersCard } from "~/components/admin/settings/counters/CountersCard";
 import { SettingsEditor } from "~/components/admin/settings/SettingsEditor";
 import { PageHeader } from "~/components/admin/PageHeader";
@@ -5,6 +6,7 @@ import { Card } from "~/components/ui/Card";
 import { ErrorState, LoadingState } from "~/components/ui/StateBlocks";
 import { useAsyncData } from "~/components/ui/useAsyncData";
 import { t } from "~/i18n/t";
+import { accountRepository } from "~/infrastructure/api/account-repository";
 import { counterRepository } from "~/infrastructure/api/counter-repository";
 import { settingsRepository } from "~/infrastructure/api/settings-repository";
 
@@ -28,6 +30,7 @@ export default function SettingsRoute() {
         </>
       )}
       <CountersCard repo={counterRepository} />
+      <ChangePasswordCard repo={accountRepository} />
     </div>
   );
 }

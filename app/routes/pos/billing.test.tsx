@@ -143,7 +143,7 @@ describe("Billing desk: scanning", () => {
     ).toBeInTheDocument();
   });
 
-  it("steps the quantity with minus and plus and removes a row", async () => {
+  it("steps the quantity with minus and plus, stops at 1, and removes a row with the bin", async () => {
     const { user, scanBox } = await openDesk();
     await user.type(scanBox, "8961007800077{Enter}");
     await user.type(scanBox, "8961004500044{Enter}");
@@ -155,9 +155,11 @@ describe("Billing desk: scanning", () => {
     await user.click(
       screen.getByRole("button", { name: "Decrease Bread Loaf" }),
     );
-    await user.click(
+    expect(screen.getByLabelText("Quantity of Bread Loaf")).toHaveValue("1");
+    expect(
       screen.getByRole("button", { name: "Decrease Bread Loaf" }),
-    );
+    ).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "Remove Bread Loaf" }));
     expect(
       screen.queryByLabelText("Quantity of Bread Loaf"),
     ).not.toBeInTheDocument();
