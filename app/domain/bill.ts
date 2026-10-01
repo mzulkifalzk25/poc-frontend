@@ -39,16 +39,16 @@ export function addProduct(
   return setQuantity(lines, product.productId, existing.qty + 1);
 }
 
-// Zero or less removes the row; the typed quantity is capped.
+// A row never goes below 1 (the bin removes it); a quantity that is not a number changes nothing.
 export function setQuantity(
   lines: DraftLine[],
   productId: number,
   qty: number,
 ): DraftLine[] {
-  const next = Math.min(Math.floor(qty), MAX_LINE_QTY);
-  if (!Number.isFinite(next) || next <= 0) {
-    return removeLine(lines, productId);
+  if (!Number.isFinite(qty)) {
+    return lines;
   }
+  const next = Math.min(Math.max(Math.floor(qty), 1), MAX_LINE_QTY);
   return lines.map((line) =>
     line.productId === productId ? { ...line, qty: next } : line,
   );

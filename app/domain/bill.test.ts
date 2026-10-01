@@ -55,10 +55,11 @@ describe("quantities", () => {
     expect(setQuantity(scanned(soap), 8, 2.7)[0]?.qty).toBe(2);
   });
 
-  it("removes the row at zero, below zero or on a bad number", () => {
-    expect(setQuantity(scanned(soap, milk), 8, 0)).toHaveLength(1);
-    expect(setQuantity(scanned(soap), 8, Number.NaN)).toEqual([]);
-    expect(changeQuantity(scanned(soap), 8, -1)).toEqual([]);
+  it("never takes a row below 1; the bin is how a row is removed", () => {
+    expect(setQuantity(scanned(soap, milk), 8, 0)[0]?.qty).toBe(1);
+    expect(setQuantity(scanned(soap), 8, -4)[0]?.qty).toBe(1);
+    expect(changeQuantity(scanned(soap), 8, -1)[0]?.qty).toBe(1);
+    expect(setQuantity(scanned(soap), 8, Number.NaN)).toEqual(scanned(soap));
   });
 
   it("changes by plus and minus", () => {

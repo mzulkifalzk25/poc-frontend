@@ -55,3 +55,16 @@ describe("formatAmount and formatPaisa", () => {
     expect(formatPaisa(17550)).toBe("Rs 176");
   });
 });
+
+describe("formatCompactMoney", () => {
+  it("shortens millions and thousands, keeps small amounts whole", async () => {
+    const { formatCompactMoney } = await import("./money");
+
+    expect(formatCompactMoney("40100000")).toBe("Rs 40.1M");
+    expect(formatCompactMoney("96400")).toBe("Rs 96.4K");
+    expect(formatCompactMoney("1350")).toBe("Rs 1,350");
+    expect(formatCompactMoney("-1500000")).toBe("-Rs 1.5M");
+    expect(formatCompactMoney("2000000")).toBe("Rs 2M");
+    expect(formatCompactMoney("1593000000")).toBe("Rs 1,593M");
+  });
+});

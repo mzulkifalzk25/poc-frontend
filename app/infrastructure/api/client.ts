@@ -28,6 +28,8 @@ interface RequestOptions {
   method?: Method;
   body?: unknown;
   tokenSource?: TokenSource;
+  headers?: Record<string, string>;
+  as?: "json" | "blob";
 }
 
 // Users send `Bearer <jwt>`; an activated counter PC sends `Device <token>`.
@@ -50,8 +52,12 @@ async function sendRequest(
   method: Method,
   body: unknown,
   tokenSource: TokenSource,
+  extraHeaders: Record<string, string> = {},
 ): Promise<Response> {
-  const headers: Record<string, string> = { Accept: "application/json" };
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    ...extraHeaders,
+  };
   if (body !== undefined) {
     headers["Content-Type"] = "application/json";
   }
@@ -66,9 +72,15 @@ async function sendRequest(
   });
 }
 
-async function parseResponse<T>(response: Response): Promise<T> {
+async function parseResponse<T>(
+  response: Response,
+  as: "json" | "blob" = "json",
+): Promise<T> {
   if (response.status === 204) {
     return undefined as T;
+  }
+  if (as === "blob" && response.ok) {
+    return (await response.blob()) as T;
   }
   const data: unknown = await response.json();
   if (!response.ok) {
@@ -85,18 +97,30 @@ async function request<T>(
   path: string,
   options: RequestOptions = {},
 ): Promise<T> {
-  const { method = "GET", body, tokenSource = "user" } = options;
-  const response = await sendRequest(path, method, body, tokenSource);
+  const {
+    method = "GET",
+    body,
+    tokenSource = "user",
+    headers,
+    as = "json",
+  } = options;
+  const response = await sendRequest(path, method, body, tokenSource, headers);
 
   if (response.status === 401 && tokenSource === "user" && tokenProvider) {
     const refreshed = await tokenProvider.refresh();
     if (refreshed) {
-      const retryResponse = await sendRequest(path, method, body, tokenSource);
-      return parseResponse<T>(retryResponse);
+      const retryResponse = await sendRequest(
+        path,
+        method,
+        body,
+        tokenSource,
+        headers,
+      );
+      return parseResponse<T>(retryResponse, as);
     }
   }
 
-  return parseResponse<T>(response);
+  return parseResponse<T>(response, as);
 }
 
 type NoBodyOptions = Omit<RequestOptions, "method" | "body">;
