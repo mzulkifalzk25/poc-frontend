@@ -1,12 +1,15 @@
 import type { ReactNode } from "react";
-import { NavLink, useNavigate } from "react-router";
+import { NavLink, useLocation, useNavigate } from "react-router";
 
 import { Logo } from "~/components/ui/Logo";
 import { getInitials } from "~/domain/initials";
+import { formatCompactMoney } from "~/domain/money";
 import type { Strings } from "~/i18n/strings";
 import { t } from "~/i18n/t";
 import { setSession } from "~/infrastructure/session/session-store";
 import { useSession } from "~/infrastructure/session/use-session";
+
+import { useSidebarStats, type SidebarStats } from "./useSidebarStats";
 
 type AdminPage = Exclude<keyof Strings["adminPages"], "comingSoon">;
 type NavGroupKey = keyof Strings["adminNav"]["groups"];
@@ -16,7 +19,8 @@ interface NavItem {
   to: string;
   end?: boolean;
   icon: ReactNode;
-  badge?: string;
+  // Two items can share a path; `match` then decides which one is current.
+  match?: (pathname: string, search: string) => boolean;
 }
 
 interface NavGroup {
@@ -87,7 +91,6 @@ const navGroups: NavGroup[] = [
       {
         page: "inventory",
         to: "/admin/inventory",
-        badge: "146",
         icon: (
           <svg {...iconProps}>
             <path d="M12 3l9 5-9 5-9-5 9-5z" />
@@ -148,11 +151,26 @@ const navGroups: NavGroup[] = [
       {
         page: "staff",
         to: "/admin/staff",
+        match: (pathname, search) =>
+          pathname === "/admin/staff" && !isAddCashier(search),
         icon: (
           <svg {...iconProps}>
             <circle cx="9" cy="8" r="3.5" />
             <path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6" />
             <path d="M16 4.5a3.5 3.5 0 010 7M18 14.5c2 .7 3.5 2.5 3.5 5.5" />
+          </svg>
+        ),
+      },
+      {
+        page: "addCashier",
+        to: "/admin/staff?add=1",
+        match: (pathname, search) =>
+          pathname === "/admin/staff" && isAddCashier(search),
+        icon: (
+          <svg {...iconProps}>
+            <circle cx="9" cy="8" r="3.5" />
+            <path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6" />
+            <path d="M19 8v6M16 11h6" />
           </svg>
         ),
       },
@@ -182,8 +200,31 @@ const navGroups: NavGroup[] = [
   },
 ];
 
+function isCurrent(
+  item: NavItem,
+  pathActive: boolean,
+  location: { pathname: string; search: string },
+): boolean {
+  return item.match
+    ? item.match(location.pathname, location.search)
+    : pathActive;
+}
+
+function isAddCashier(search: string): boolean {
+  return new URLSearchParams(search).get("add") === "1";
+}
+
+function badgeFor(item: NavItem, stats: SidebarStats): string | null {
+  if (item.page === "inventory" && stats.lowStock && stats.lowStock > 0) {
+    return String(stats.lowStock);
+  }
+  return null;
+}
+
 export function AdminSidebar() {
   const session = useSession();
+  const stats = useSidebarStats();
+  const location = useLocation();
   const navigate = useNavigate();
   const strings = t().adminNav;
   const pages = t().adminPages;
@@ -194,7 +235,7 @@ export function AdminSidebar() {
   }
 
   return (
-    <div className="flex h-screen w-60 flex-shrink-0 flex-col border-e border-blue-mid bg-navy text-white">
+    <div className="flex h-screen w-60 flex-shrink-0 flex-col border-e border-blue-mid bg-navy text-white print:hidden">
       <div className="flex items-center gap-2.5 px-[18px] pt-[22px] pb-4">
         <Logo variant="gold" size={36} />
         <div className="flex flex-col leading-tight">
@@ -209,17 +250,21 @@ export function AdminSidebar() {
 
       <div className="mx-3.5 mb-1.5 flex items-center gap-2.5 rounded-card border border-[#24405F] bg-[#16304F] px-3 py-2.5">
         <div className="flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-[9px] bg-category-bakery-bg text-sm font-bold text-[#7A5A05]">
-          FB
+          {stats.storeName ? getInitials(stats.storeName) : ""}
         </div>
         <div className="flex min-w-0 flex-grow flex-col">
-          <span className="text-sm font-semibold">Fresh Basket Mart</span>
-          <span className="text-xs text-[#9FB0C4]">{strings.yourStore}</span>
+          <span className="text-sm font-semibold">
+            {stats.storeName ?? strings.yourStore}
+          </span>
+          <span className="text-xs text-[#9FB0C4]">
+            {stats.storeName ? strings.yourStore : ""}
+          </span>
         </div>
       </div>
 
       <nav
         aria-label={strings.label}
-        className="flex flex-grow flex-col gap-0.5 px-3.5"
+        className="flex min-h-0 flex-grow flex-col gap-0.5 overflow-y-auto px-3.5"
       >
         {navGroups.map((group) => (
           <div key={group.group}>
@@ -233,7 +278,7 @@ export function AdminSidebar() {
                 end={item.end}
                 className={({ isActive }) =>
                   `flex h-10 items-center gap-2.5 rounded-card px-2.5 text-sm ${
-                    isActive
+                    isCurrent(item, isActive, location)
                       ? "bg-blue-mid font-semibold text-white"
                       : "font-medium text-[#B8C4D3] hover:bg-[#16304F]"
                   }`
@@ -243,7 +288,7 @@ export function AdminSidebar() {
                   <>
                     <span
                       className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg ${
-                        isActive
+                        isCurrent(item, isActive, location)
                           ? "bg-gold text-navy"
                           : "bg-[#16304F] text-[#9FB0C4]"
                       }`}
@@ -251,9 +296,9 @@ export function AdminSidebar() {
                       {item.icon}
                     </span>
                     <span className="flex-grow">{pages[item.page]}</span>
-                    {item.badge && (
+                    {badgeFor(item, stats) && (
                       <span className="rounded-pill bg-[#4A3512] px-1.5 py-0.5 font-mono text-[11px] font-semibold text-[#FFD89A]">
-                        {item.badge}
+                        {badgeFor(item, stats)}
                       </span>
                     )}
                   </>
@@ -273,10 +318,14 @@ export function AdminSidebar() {
         </span>
         <div className="flex items-baseline justify-between">
           <span className="font-heading text-2xl leading-none font-bold">
-            Rs 40.1M
+            {stats.salesToday === null
+              ? "–"
+              : formatCompactMoney(stats.salesToday)}
           </span>
           <span className="text-xs text-[#B6C8DA]">
-            {strings.today.bills(37742)}
+            {stats.billsToday === null
+              ? ""
+              : strings.today.bills(stats.billsToday)}
           </span>
         </div>
         <span className="text-xs text-[#B6C8DA]">

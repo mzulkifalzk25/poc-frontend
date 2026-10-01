@@ -99,7 +99,8 @@ function BillRow({
         <button
           type="button"
           aria-label={strings.decrease(line.name)}
-          className={stepClass}
+          disabled={line.qty <= 1}
+          className={`${stepClass} disabled:cursor-not-allowed disabled:opacity-40`}
           onClick={() => {
             actions.onChange(line.productId, -1);
           }}
