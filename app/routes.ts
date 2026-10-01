@@ -20,6 +20,7 @@ export default [
       route("shift", "routes/pos/shift.tsx"),
     ]),
   ]),
+  route("admin/receipt", "routes/admin/receipt.tsx"),
   layout("routes/admin/layout.tsx", [
     ...prefix("admin", [
       index("routes/admin/dashboard.tsx"),
@@ -28,8 +29,9 @@ export default [
         route(":id", "routes/admin/product-edit.tsx"),
       ]),
       route("categories", "routes/admin/categories.tsx"),
-      route("inventory", "routes/admin/inventory.tsx"),
-      route("inventory/adjust", "routes/admin/inventory-adjust.tsx"),
+      route("inventory", "routes/admin/inventory.tsx", [
+        route("adjust", "routes/admin/inventory-adjust.tsx"),
+      ]),
       route("receive", "routes/admin/receive.tsx"),
       route("sales", "routes/admin/sales.tsx"),
       route("reports", "routes/admin/reports.tsx"),

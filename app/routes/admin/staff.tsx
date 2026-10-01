@@ -1,3 +1,6 @@
+import { useEffect, useEffectEvent } from "react";
+import { useSearchParams } from "react-router";
+
 import { CashierForm } from "~/components/admin/staff/CashierForm";
 import { StaffActionButtons } from "~/components/admin/staff/StaffActions";
 import { StaffDialogs } from "~/components/admin/staff/StaffDialogs";
@@ -52,6 +55,19 @@ export default function StaffRoute() {
       showToast(message, "error");
     },
   });
+  // "Add cashier" in the sidebar lands here with ?add=1: a blank form, name field focused.
+  const [searchParams] = useSearchParams();
+  const adding = searchParams.get("add") === "1";
+  const readyToAdd = useEffectEvent(() => {
+    editor.edit(null);
+    document.getElementById("cashier-name")?.focus();
+  });
+  const loaded = state.status === "ready";
+  useEffect(() => {
+    if (adding && loaded) {
+      readyToAdd();
+    }
+  }, [adding, loaded]);
   const now = new Date();
   const data = state.status === "ready" ? state.data : null;
   const summary = data ? staffSummary(data.members, now) : null;

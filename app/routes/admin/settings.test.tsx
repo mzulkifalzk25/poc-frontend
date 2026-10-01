@@ -321,4 +321,68 @@ describe("SettingsRoute", () => {
     ]);
     expect(screen.getByLabelText("3-digit code")).toHaveValue("");
   });
+
+  it("changes the owner's password", async () => {
+    const bodies: unknown[] = [];
+    install({
+      "POST /me/change-password": (body) => {
+        bodies.push(body);
+        return new Response(null, { status: 204 });
+      },
+    });
+    const user = await openPage();
+
+    await user.type(screen.getByLabelText("Current password"), "old-pass");
+    await user.type(screen.getByLabelText("New password"), "Brand-New-77");
+    await user.type(
+      screen.getByLabelText("New password again"),
+      "Brand-New-77",
+    );
+    await user.click(screen.getByRole("button", { name: "Change password" }));
+
+    expect(await screen.findByText("Password changed")).toBeInTheDocument();
+    expect(bodies).toEqual([
+      { current_password: "old-pass", new_password: "Brand-New-77" },
+    ]);
+  });
+
+  it("shows the server's message for a wrong current password", async () => {
+    install({
+      "POST /me/change-password": () =>
+        jsonResponse(400, {
+          error: {
+            code: "invalid_current_password",
+            message: "The current password is incorrect.",
+            fields: {
+              current_password: ["The current password is incorrect."],
+            },
+          },
+        }),
+    });
+    const user = await openPage();
+
+    await user.type(screen.getByLabelText("Current password"), "nope");
+    await user.type(screen.getByLabelText("New password"), "Brand-New-77");
+    await user.type(
+      screen.getByLabelText("New password again"),
+      "Brand-New-77",
+    );
+    await user.click(screen.getByRole("button", { name: "Change password" }));
+
+    expect(
+      await screen.findByText("The current password is incorrect."),
+    ).toBeInTheDocument();
+  });
+
+  it("will not send passwords that do not match", async () => {
+    install();
+    const user = await openPage();
+
+    await user.type(screen.getByLabelText("Current password"), "old-pass");
+    await user.type(screen.getByLabelText("New password"), "Brand-New-77");
+    await user.type(screen.getByLabelText("New password again"), "different");
+    await user.click(screen.getByRole("button", { name: "Change password" }));
+
+    expect(screen.getByText("The passwords do not match.")).toBeInTheDocument();
+  });
 });

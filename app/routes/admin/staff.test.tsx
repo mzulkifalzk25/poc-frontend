@@ -274,4 +274,16 @@ describe("StaffRoute", () => {
     ).toBeInTheDocument();
     expect(bodies).toEqual([{ is_active: true }]);
   });
+
+  it("opens a blank, focused Add cashier form from the sidebar link", async () => {
+    install();
+    render(<Stub initialEntries={["/admin/staff?add=1"]} />);
+
+    const name = await screen.findByLabelText("Full name");
+
+    await vi.waitFor(() => {
+      expect(name).toHaveFocus();
+    });
+    expect(name).toHaveValue("");
+  });
 });

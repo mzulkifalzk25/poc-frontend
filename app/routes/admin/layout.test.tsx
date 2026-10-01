@@ -41,4 +41,21 @@ describe("admin layout guard", () => {
 
     expect(await screen.findByText("Sign in")).toBeInTheDocument();
   });
+
+  it("keeps the sidebar in place and scrolls only the page content", async () => {
+    setSession({
+      role: "owner",
+      accessToken: "a",
+      refreshToken: "r",
+      userId: 1,
+      fullName: "Sana Ahmed",
+    });
+
+    render(<Stub initialEntries={["/admin"]} />);
+
+    const content = await screen.findByText("Dashboard content");
+    const main = content.closest("main");
+    expect(main).toHaveClass("overflow-y-auto");
+    expect(main?.parentElement).toHaveClass("h-screen", "overflow-hidden");
+  });
 });
